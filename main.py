@@ -14,7 +14,7 @@ class PullRequestsPlugin(PluginBase):
             plugin_base=self,
             action_base=PullRequestsActions,
             action_id_suffix="PullRequestsActions",
-            action_name="Pull Requests",
+            action_name="Fetch PRs",
         )
         self.add_action_holder(self.pull_requests_holder)
 

@@ -45,16 +45,20 @@ class PullRequestsActions(ActionBase):
         self.token_entry.connect("changed", self.on_token_changed)
 
         # ComboBoxText for Refresh Rate (dropdown with 0, 10, 30, 60; default 60)
-        self.refresh_rate_row = Gtk.ComboBoxText(
-            title="Refresh Rate (minutes)"
-        )
+        self.refresh_rate_row = Gtk.ComboBoxText()
         for rate in ["0", "10", "30", "60"]:
             self.refresh_rate_row.append_text(rate)
         self.refresh_rate_row.set_active(3)  # Default to "60"
         self.refresh_rate_row.connect("changed", self.on_refresh_rate_changed)
 
+        # Add a label for the ComboBoxText
+        refresh_label = Gtk.Label(label="Refresh Rate (minutes):", halign=Gtk.Align.START)
+        refresh_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        refresh_row.append(refresh_label)
+        refresh_row.append(self.refresh_rate_row)
+
         # Return the widgets so they are shown in the UI
-        return [self.token_entry, self.refresh_rate_row]
+        return [self.token_entry, refresh_row]
 
     def on_token_changed(self, entry):
         self.github_token = entry.get_text()
