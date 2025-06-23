@@ -1,6 +1,17 @@
 {
-    "version": "",
-    "thumbnail": "",
-    "id": "",
-    "name": ""
+  "version": "1.0.0",
+  "thumbnail": "store/Thumbnail.png",
+  "id": "com_codeNinja_GithubPlugin",
+  "name": "Github Plugin",
+  "descriptions": {
+    "en_US": ""
+  },
+  "short-descriptions": {
+    "en_US": ""
+  },
+  "tags": ["Productivity", "Utility"],
+  "minimum-app-version": "1.0.0",
+  "app-version": "1.1.1-alpha",
+  "description": "",
+  "short-description": ""
 }
