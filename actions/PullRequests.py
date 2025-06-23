@@ -36,7 +36,7 @@ class PullRequestsActions(ActionBase):
         print("PullRequests: Key up event triggered")
         # Placeholder for logic to clear or update UI
 
-    def create_generative_ui(self):
+    def get_config_rows(self):
         # EntryRow for GitHub Access Token
         self.token_entry = Adw.EntryRow(
             title="GitHub Access Token"
