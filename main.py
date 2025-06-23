@@ -20,7 +20,7 @@ class PluginTemplate(PluginBase):
 
         # Register plugin
         self.register(
-            plugin_name="Pull Requests",
+            plugin_name="Github Plugin",
             github_repo="https://github.com/parkour86/GithubPlugin",
             plugin_version="1.0.0",
             app_version="1.1.1-alpha"
