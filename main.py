@@ -13,15 +13,15 @@ class PluginTemplate(PluginBase):
         self.pull_requests_holder = ActionHolder(
             plugin_base=self,
             action_base=PullRequests,
-            action_id="dev_core447_Template::PullRequests",
+            action_id_suffix="PullRequests",
             action_name="Pull Requests",
         )
         self.add_action_holder(self.pull_requests_holder)
 
         # Register plugin
         self.register(
-            plugin_name="Template",
-            github_repo="https://github.com/StreamController/PluginTemplate",
+            plugin_name="Pull Requests",
+            github_repo="https://github.com/parkour86/GithubPlugin",
             plugin_version="1.0.0",
             app_version="1.1.1-alpha"
         )
