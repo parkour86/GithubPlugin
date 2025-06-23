@@ -12,7 +12,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
 
-class PullRequests(ActionBase):
+class PullRequestsActions(ActionBase):
     """
     Example Action for PluginTemplate: PullRequests
     This action can be extended to fetch and display pull requests from a repository.

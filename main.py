@@ -3,17 +3,17 @@ from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.PluginManager.ActionHolder import ActionHolder
 
 # Import actions
-from .actions.PullRequests import PullRequests
+from .actions.PullRequests import PullRequestsActions
 
-class PluginTemplate(PluginBase):
+class PullRequestsPlugin(PluginBase):
     def __init__(self):
         super().__init__()
 
         # Register PullRequests action
         self.pull_requests_holder = ActionHolder(
             plugin_base=self,
-            action_base=PullRequests,
-            action_id_suffix="PullRequests",
+            action_base=PullRequestsActions,
+            action_id_suffix="PullRequestsActions",
             action_name="Pull Requests",
         )
         self.add_action_holder(self.pull_requests_holder)
