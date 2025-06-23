@@ -45,7 +45,9 @@ class PullRequestsActions(ActionBase):
         self.token_entry.connect("changed", self.on_token_changed)
 
         # ComboBoxText for Refresh Rate (dropdown with 0, 10, 30, 60; default 60)
-        self.refresh_rate_row = Gtk.ComboBoxText()
+        self.refresh_rate_row = Gtk.ComboBoxText(
+            title="Refresh Rate (minutes)"
+        )
         for rate in ["0", "10", "30", "60"]:
             self.refresh_rate_row.append_text(rate)
         self.refresh_rate_row.set_active(3)  # Default to "60"
