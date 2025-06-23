@@ -44,15 +44,15 @@ class PullRequestsActions(ActionBase):
         self.token_entry.set_text(self.github_token)
         self.token_entry.connect("changed", self.on_token_changed)
 
-        # SwitchRow for Refresh Rate (dropdown with 0, 10, 30, 60; default 60)
+        # ComboBoxText for Refresh Rate (dropdown with 0, 10, 30, 60; default 60)
         self.refresh_rate_row = Gtk.ComboBoxText()
         for rate in ["0", "10", "30", "60"]:
             self.refresh_rate_row.append_text(rate)
         self.refresh_rate_row.set_active(3)  # Default to "60"
         self.refresh_rate_row.connect("changed", self.on_refresh_rate_changed)
 
-        # Optionally, add these to a container if needed
-        # For demonstration, just store the widgets as attributes
+        # Return the widgets so they are shown in the UI
+        return [self.token_entry, self.refresh_rate_row]
 
     def on_token_changed(self, entry):
         self.github_token = entry.get_text()
