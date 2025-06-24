@@ -27,9 +27,6 @@ class PullRequestsActions(ActionBase):
         self._refresh_timer_id = None  # For periodic refresh
 
     def on_ready(self) -> None:
-        self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
-        self.set_background_color(color=[255, 255, 255, 255], update=True)
-        self.clear_labels()
         settings = self.get_settings()
         github_token = settings.get("github_token", "")
         repo_url = settings.get("repo_url", "")
@@ -37,6 +34,9 @@ class PullRequestsActions(ActionBase):
         if github_token and repo_url and refresh_rate and repo_url.startswith("https://github.com/"):
             self.fetch_and_display_pull_request_count()
         else:
+            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
+            self.set_background_color(color=[255, 255, 255, 255], update=True)
+            self.clear_labels()
             self.set_top_label("\nConfigure\nGithub\nPlugin", color=[255, 100, 100], outline_width=1, font_size=17)
         self.start_refresh_timer()
 
