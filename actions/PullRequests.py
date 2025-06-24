@@ -13,7 +13,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
 
 # Import ComboRow for dropdowns
-from StreamController.GtkHelper.GenerativeUI.ComboRow import ComboRow
+from GtkHelper.GenerativeUI.ComboRow import ComboRow
 
 class PullRequestsActions(ActionBase):
     """
