@@ -96,6 +96,9 @@ class PullRequestsActions(ActionBase):
 
     def on_refresh_rate_changed(self, widget, value, old):
         settings = self.get_settings()
+        # If value is a ComboRowItem, extract its value
+        if hasattr(value, "get_value"):
+            value = value.get_value()
         if value is not None:
             settings["refresh_rate"] = value
         self.set_settings(settings)
