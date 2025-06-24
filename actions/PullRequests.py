@@ -31,7 +31,8 @@ class PullRequestsActions(ActionBase):
         icon_path = os.path.join(self.plugin_base.PATH, "assets", "info.png")
         if os.path.exists(icon_path):
             self.set_media(media_path=icon_path, size=0.75)
-        self.set_top_label("PRs")
+        self.set_center_label("PRs")
+        self.set_background_color(color=[255, 255, 255, 255], update=True)
         self.start_refresh_timer()
 
     def on_key_down(self) -> None:
@@ -134,7 +135,7 @@ class PullRequestsActions(ActionBase):
                     shas = [pr["head"]["sha"] for pr in pulls if "head" in pr and "sha" in pr["head"]]
                     self.fetch_and_set_commit_status_icons(owner, repo, shas)
                 else:
-                    self.set_bottom_label(f"Error: {response.status_code}", color=[255, 100, 100])
+                    self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"))
             except Exception:
                 self.set_bottom_label("Request failed", color=[255, 100, 100])
         except Exception:
