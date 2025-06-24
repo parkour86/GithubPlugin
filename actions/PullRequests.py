@@ -23,6 +23,9 @@ class PullRequestsActions(ActionBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.github_token = ""
+        self.repo_url = ""
+        self.owner = ""
+        self.repo = ""
         self.refresh_rate = 60
 
     def on_ready(self) -> None:
@@ -47,6 +50,13 @@ class PullRequestsActions(ActionBase):
         self.token_entry.set_text(self.github_token)
         self.token_entry.connect("changed", self.on_token_changed)
 
+        # EntryRow for GitHub Repo URL
+        self.repo_entry = Adw.EntryRow(
+            title="Repository URL (e.g. https://github.com/owner/repo)"
+        )
+        self.repo_entry.set_text(self.repo_url)
+        self.repo_entry.connect("changed", self.on_repo_url_changed)
+
         # ComboRow for Refresh Rate (dropdown with 0, 10, 30, 60; default 60)
         refresh_options = ["0", "10", "30", "60"]
         self.refresh_rate_row = ComboRow(
@@ -59,10 +69,23 @@ class PullRequestsActions(ActionBase):
         )
 
         # Return the widgets so they are shown in the UI
-        return [self.token_entry, self.refresh_rate_row.widget]
+        return [self.token_entry, self.repo_entry, self.refresh_rate_row.widget]
 
     def on_token_changed(self, entry):
         self.github_token = entry.get_text()
+
+    def on_repo_url_changed(self, entry):
+        self.repo_url = entry.get_text()
+        # Parse owner and repo from the URL
+        # Example: https://github.com/owner/repo
+        import re
+        match = re.match(r"https?://github\\.com/([^/]+)/([^/]+)", self.repo_url)
+        if match:
+            self.owner = match.group(1)
+            self.repo = match.group(2)
+        else:
+            self.owner = ""
+            self.repo = ""
 
     def on_refresh_rate_changed(self, widget, value, old):
         # value is the new selected value from ComboRow
