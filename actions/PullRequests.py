@@ -28,7 +28,7 @@ class PullRequestsActions(ActionBase):
 
     def on_ready(self) -> None:
         # Set an icon if available, otherwise skip
-        self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
+        self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "circle-info.svg"), size=0.9)
         self.set_background_color(color=[255, 255, 255, 255], update=True)
         self.set_top_label("Configure", color=[255, 100, 100], outline_width=1, font_size=18)
         self.set_center_label("Button", color=[255, 100, 100], outline_width=1, font_size=18)
