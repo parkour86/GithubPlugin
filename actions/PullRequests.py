@@ -72,7 +72,7 @@ class PullRequestsActions(ActionBase):
         token_entry.connect("notify::text", self.on_token_changed)
 
         # Repo URL entry
-        repo_entry = Adw.EntryRow(title="Repository URL (e.g. https://github.com/{owner}/{repo})")
+        repo_entry = Adw.EntryRow(title="Repository URL (e.g. https://github.com/\<owner\>/\<repo\>)")
         repo_entry.set_text(repo_url)
         repo_entry.connect("notify::text", self.on_repo_url_changed)
 
