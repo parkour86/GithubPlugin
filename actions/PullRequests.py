@@ -135,7 +135,7 @@ class PullRequestsActions(ActionBase):
             github_token = settings.get("github_token", "")
             repo_url = settings.get("repo_url", "")
             owner, repo = self.parse_owner_repo(repo_url)
-            log.info(f"[DEBUG] Fetching pull requests for {owner}/{repo}")
+            log.info(f"[DEBUG] Fetching pull requests for {owner}/{repo}/{github_token}")
 
             if not owner or not repo or not github_token:
                 self.clear_labels("error")
