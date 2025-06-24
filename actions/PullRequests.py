@@ -32,6 +32,7 @@ class PullRequestsActions(ActionBase):
         repo_url = settings.get("repo_url", "")
         refresh_rate = settings.get("refresh_rate", "")
         if github_token and repo_url and refresh_rate and repo_url.startswith("https://github.com/"):
+            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
             self.fetch_and_display_pull_request_count()
         else:
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
@@ -132,6 +133,7 @@ class PullRequestsActions(ActionBase):
 
             if not owner or not repo or not github_token:
                 self.clear_labels()
+                self.set_background_color(color=[255, 255, 255, 255], update=True)
                 self.set_top_label("\nConfigure\nGithub\nPlugin", **kwargs)
                 self.set_media(media_path=default_media, size=0.9)
                 #self.set_bottom_label("Missing Info", color=[255, 100, 100], outline_width=1, font_family="cantarell")
@@ -151,10 +153,11 @@ class PullRequestsActions(ActionBase):
                     pulls = response.json()
                     pr_count = len(pulls)
                     self.clear_labels()
+                    self.set_background_color(None, update=True)
                     self.set_center_label("PRs", color=[100, 255, 100], outline_width=2, font_size=20, font_family="cantarell")
                     self.set_bottom_label(f"{pr_count}", color=[100, 255, 100], outline_width=4, font_size=20, font_family="cantarell")
                     # Set default gray Github icon
-                    self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
+                    self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#A00000.png"), size=0.9)
                     # Extract SHAs and check commit statuses only if there are PRs
                     if pr_count > 0:
                         shas = [pr["head"]["sha"] for pr in pulls if "head" in pr and "sha" in pr["head"]]
@@ -172,15 +175,18 @@ class PullRequestsActions(ActionBase):
                         self.set_top_label("\nConfigure\nGithub\nPlugin", **kwargs)
 
                     self.set_media(media_path=default_media, size=0.9)
+                    self.set_background_color(color=[255, 255, 255, 255], update=True)
 
             except Exception:
                 self.clear_labels()
                 self.set_top_label("\nRequest\nFailed", **kwargs)
                 self.set_media(media_path=default_media, size=0.9)
+                self.set_background_color(color=[255, 255, 255, 255], update=True)
         except Exception:
             self.clear_labels()
             self.set_top_label("\nInternal\nError", **kwargs)
             self.set_media(media_path=default_media, size=0.9)
+            self.set_background_color(color=[255, 255, 255, 255], update=True)
 
     def fetch_and_set_commit_status_icons(self, owner, repo, shas):
         import requests
