@@ -29,8 +29,8 @@ class PullRequestsActions(ActionBase):
     def on_ready(self) -> None:
         # Set an icon if available, otherwise skip
         self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
-        self.set_top_label("Configure", color=[255, 100, 100], stroke_width=1)
-        self.set_center_label("Button", color=[255, 100, 100], stroke_width=1)
+        self.set_top_label("Configure", color=[255, 100, 100], outline_width=1)
+        self.set_center_label("Button", color=[255, 100, 100], outline_width=1)
         self.set_bottom_label(None)
         self.set_background_color(color=[255, 255, 255, 255], update=True)
         self.start_refresh_timer()
@@ -114,7 +114,7 @@ class PullRequestsActions(ActionBase):
             owner, repo = self.parse_owner_repo(repo_url)
 
             if not owner or not repo or not github_token:
-                self.set_bottom_label("Missing Info", color=[255, 100, 100], stroke_width=1)
+                self.set_bottom_label("Missing Info", color=[255, 100, 100], outline_width=1)
                 return
 
             url = f"https://api.github.com/repos/{owner}/{repo}/pulls"
@@ -129,8 +129,8 @@ class PullRequestsActions(ActionBase):
                     pulls = response.json()
                     pr_count = len(pulls)
                     self.set_top_label(None)
-                    self.set_center_label("PRs", stroke_width=1)
-                    self.set_bottom_label(f"{pr_count}", color=[100, 255, 100], stroke_width=1)
+                    self.set_center_label("PRs", outline_width=1)
+                    self.set_bottom_label(f"{pr_count}", color=[100, 255, 100], outline_width=1)
                     # Set default icon to gray
                     self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
                     # Extract SHAs and check commit statuses only if there are PRs
@@ -138,13 +138,13 @@ class PullRequestsActions(ActionBase):
                         shas = [pr["head"]["sha"] for pr in pulls if "head" in pr and "sha" in pr["head"]]
                         self.fetch_and_set_commit_status_icons(owner, repo, shas)
                 else:
-                    self.set_top_label("Configure", color=[255, 100, 100])
-                    self.set_center_label("Button", color=[255, 100, 100])
+                    self.set_top_label("Configure", color=[255, 100, 100], outline_width=1)
+                    self.set_center_label("Button", color=[255, 100, 100], outline_width=1)
                     self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
             except Exception:
-                self.set_bottom_label("Request failed", color=[255, 100, 100], stroke_width=1)
+                self.set_bottom_label("Request failed", color=[255, 100, 100], outline_width=1)
         except Exception:
-            self.set_bottom_label("Internal error", color=[255, 100, 100], stroke_width=1)
+            self.set_bottom_label("Internal error", color=[255, 100, 100], outline_width=1)
 
     def fetch_and_set_commit_status_icons(self, owner, repo, shas):
         import requests
