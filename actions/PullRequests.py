@@ -128,7 +128,7 @@ class PullRequestsActions(ActionBase):
             try:
                 response = requests.get(url, headers=headers, timeout=10)
                 status = response.status_code
-                default_media = os.path.join(self.plugin_base.PATH, "assets", "#circle-info.svg")
+                default_media = os.path.join(self.plugin_base.PATH, "assets", "circle-info.svg")
 
                 if status == 200:
                     pulls = response.json()
