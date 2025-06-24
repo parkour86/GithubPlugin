@@ -77,14 +77,14 @@ class PullRequestsActions(ActionBase):
         settings = self.get_settings()
         settings["github_token"] = entry.get_text()
         self.set_settings(settings)
-        owner, repo = self.parse_owner_repo(settings.get("repo_url", ""))
+        #owner, repo = self.parse_owner_repo(settings.get("repo_url", ""))
         self.fetch_and_display_pull_request_count()
 
     def on_repo_url_changed(self, entry, *args):
         settings = self.get_settings()
         settings["repo_url"] = entry.get_text()
         self.set_settings(settings)
-        owner, repo = self.parse_owner_repo(settings.get("repo_url", ""))
+        #owner, repo = self.parse_owner_repo(settings.get("repo_url", ""))
         self.fetch_and_display_pull_request_count()
 
     def parse_owner_repo(self, repo_url):
