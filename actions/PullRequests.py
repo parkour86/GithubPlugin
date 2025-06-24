@@ -28,12 +28,10 @@ class PullRequestsActions(ActionBase):
 
     def on_ready(self) -> None:
         # Set an icon if available, otherwise skip
-        icon_path = os.path.join(self.plugin_base.PATH, "assets", "#595959.png")
-        if os.path.exists(icon_path):
-            self.set_media(media_path=icon_path, size=0.75)
+        self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
         self.set_top_label("Configure", color=[255, 100, 100])
-        self.set_center_label(None)
-        self.set_bottom_label("Button", color=[255, 100, 100])
+        self.set_center_label("Button", color=[255, 100, 100])
+        self.set_bottom_label(None)
         self.set_background_color(color=[255, 255, 255, 255], update=True)
         self.start_refresh_timer()
 
@@ -130,15 +128,16 @@ class PullRequestsActions(ActionBase):
                 if response.status_code == 200:
                     pulls = response.json()
                     pr_count = len(pulls)
+                    self.set_top_label(None)
                     self.set_center_label("PRs")
                     self.set_bottom_label(pr_count, color=[100, 255, 100])
                     # Set default icon to gray
-                    self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"))
+                    self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
                     # Extract SHAs and check commit statuses
                     shas = [pr["head"]["sha"] for pr in pulls if "head" in pr and "sha" in pr["head"]]
                     self.fetch_and_set_commit_status_icons(owner, repo, shas)
                 else:
-                    self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"))
+                    self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
             except Exception:
                 self.set_bottom_label("Request failed", color=[255, 100, 100])
         except Exception:
@@ -165,13 +164,13 @@ class PullRequestsActions(ActionBase):
         # Set icon based on state priority
         if "failure" in states:
             # Set icon to red
-            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#A00000.png"))
+            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#A00000.png"), size=0.9)
         elif "pending" in states:
             # Set icon to yellow
-            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#B7B700.png"))
+            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#B7B700.png"), size=0.9)
         elif "success" in states:
             # Set icon to green
-            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#236B23.png"))
+            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#236B23.png"), size=0.9)
 
     def start_refresh_timer(self):
         try:
