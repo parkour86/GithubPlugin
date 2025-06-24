@@ -113,7 +113,7 @@ class PullRequestsActions(ActionBase):
             github_token = settings.get("github_token", "")
             repo_url = settings.get("repo_url", "")
             owner, repo = self.parse_owner_repo(repo_url)
-            log.info(f"Fetching pull requests for {owner}/{repo}")
+            log.info(f"[DEBUG] Fetching pull requests for {owner}/{repo}")
 
             if not owner or not repo or not github_token:
                 self.set_bottom_label("Missing Info", color=[255, 100, 100], outline_width=1)
@@ -142,6 +142,7 @@ class PullRequestsActions(ActionBase):
                 else:
                     self.set_top_label("Configure", color=[255, 100, 100], outline_width=1, font_size=18)
                     self.set_center_label("Button", color=[255, 100, 100], outline_width=1, font_size=18)
+                    self.set_bottom_label(None)
                     self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
             except Exception:
                 self.set_bottom_label("Request failed", color=[255, 100, 100], outline_width=1)
