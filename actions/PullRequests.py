@@ -38,7 +38,7 @@ class PullRequestsActions(ActionBase):
         else:
             log.info("GithubPlugin: Invalid token or URL")
             self.clear_labels("error")
-            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#B7B700.png"), size=0.9)
+            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
             self.set_top_label("\nConfigure\nGithub\nPlugin", color=[255, 100, 100], outline_width=1, font_size=17)
 
         self.start_refresh_timer()
