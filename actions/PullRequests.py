@@ -30,9 +30,8 @@ class PullRequestsActions(ActionBase):
         # Set an icon if available, otherwise skip
         self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
         self.set_background_color(color=[255, 255, 255, 255], update=True)
+        self.clear_labels()
         self.set_top_label("\nConfigure\nGithub\nPlugin", color=[255, 100, 100], outline_width=1, font_size=17)
-        self.set_center_label(None)
-        self.set_bottom_label(None)
         self.start_refresh_timer()
 
     def on_key_down(self) -> None:
@@ -107,6 +106,11 @@ class PullRequestsActions(ActionBase):
         self.set_settings(settings)
         self.start_refresh_timer()
 
+    def clear_labels(self):
+        self.set_top_label(None)
+        self.set_center_label(None)
+        self.set_bottom_label(None)
+
     def fetch_and_display_pull_request_count(self):
         default_media = os.path.join(self.plugin_base.PATH, "assets", "info.png")
         try:
@@ -133,7 +137,7 @@ class PullRequestsActions(ActionBase):
                 if status == 200:
                     pulls = response.json()
                     pr_count = len(pulls)
-                    self.set_top_label(None)
+                    self.clear_labels()
                     self.set_center_label("PRs", color=[100, 255, 100], outline_width=2, font_size=20, font_family="cantarell")
                     self.set_bottom_label(f"{pr_count}", color=[100, 255, 100], outline_width=4, font_size=20, font_family="cantarell")
                     # Set default gray Github icon
@@ -143,32 +147,29 @@ class PullRequestsActions(ActionBase):
                         shas = [pr["head"]["sha"] for pr in pulls if "head" in pr and "sha" in pr["head"]]
                         self.fetch_and_set_commit_status_icons(owner, repo, shas)
                 else:
-                        # Common red label parameters
-                        red = [255, 100, 100]
-                        kwargs = {"color": red, "outline_width": 1, "font_size": 17, "font_family": "cantarell"}
+                    self.clear_labels()
+                    # Common red label parameters
+                    red = [255, 100, 100]
+                    kwargs = {"color": red, "outline_width": 1, "font_size": 17, "font_family": "cantarell"}
 
-                        if status == 404:
-                            self.set_top_label("\nInvalid\nRepo URL", **kwargs)
+                    if status == 404:
+                        self.set_top_label("\nInvalid\nRepo URL", **kwargs)
 
-                        elif status == 401:
-                            self.set_top_label("\nInvalid\nToken", **kwargs)
+                    elif status == 401:
+                        self.set_top_label("\nInvalid\nToken", **kwargs)
 
-                        else:
-                            self.set_top_label("\nConfigure\nGithub\nPlugin", **kwargs)
+                    else:
+                        self.set_top_label("\nConfigure\nGithub\nPlugin", **kwargs)
 
-                        self.set_center_label(None)
-                        self.set_bottom_label(None)
-                        self.set_media(media_path=default_media, size=0.9)
+                    self.set_media(media_path=default_media, size=0.9)
 
             except Exception:
+                self.clear_labels()
                 self.set_top_label("\nRequest\nFailed", color=[255, 100, 100], outline_width=1, font_size=17, font_family="cantarell")
-                self.set_center_label(None)
-                self.set_bottom_label(None)
                 self.set_media(media_path=default_media, size=0.9)
         except Exception:
+            self.clear_labels()
             self.set_top_label("\nInternal\nError", color=[255, 100, 100], outline_width=1, font_size=17, font_family="cantarell")
-            self.set_center_label(None)
-            self.set_bottom_label(None)
             self.set_media(media_path=default_media, size=0.9)
 
     def fetch_and_set_commit_status_icons(self, owner, repo, shas):
