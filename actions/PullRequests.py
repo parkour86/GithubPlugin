@@ -30,8 +30,8 @@ class PullRequestsActions(ActionBase):
         # Set an icon if available, otherwise skip
         self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
         self.set_background_color(color=[255, 255, 255, 255], update=True)
-        self.set_top_label("\nConfigure", color=[255, 100, 100], outline_width=1, font_size=17)
-        self.set_center_label("Button", color=[255, 100, 100], outline_width=1, font_size=17)
+        self.set_top_label("\nConfigure\Github\nPlugin", color=[255, 100, 100], outline_width=1, font_size=17)
+        self.set_center_label(None)
         self.set_bottom_label(None)
         self.start_refresh_timer()
 
@@ -148,28 +148,26 @@ class PullRequestsActions(ActionBase):
                         kwargs = {"color": red, "outline_width": 1, "font_size": 17, "font_family": "cantarell"}
 
                         if status == 404:
-                            self.set_top_label("\nInvalid", **kwargs)
-                            self.set_center_label("Repo URL", **kwargs)
+                            self.set_top_label("\nInvalid\Repo URL", **kwargs)
 
                         elif status == 401:
-                            self.set_top_label("\nInvalid", **kwargs)
-                            self.set_center_label("Token", **kwargs)
+                            self.set_top_label("\nInvalid\nToken", **kwargs)
 
                         else:
-                            self.set_top_label("\nConfigure", **kwargs)
-                            self.set_center_label("Button", **kwargs)
+                            self.set_top_label("\nConfigure\nGithub\nPlugin", **kwargs)
 
+                        self.set_center_label(None)
                         self.set_bottom_label(None)
                         self.set_media(media_path=default_media, size=0.9)
 
             except Exception:
-                self.set_top_label("\nRequest", color=[255, 100, 100], outline_width=1, font_size=17, font_family="cantarell")
-                self.set_center_label("Failed", color=[255, 100, 100], outline_width=1, font_size=17, font_family="cantarell")
+                self.set_top_label("\nRequest\nFailed", color=[255, 100, 100], outline_width=1, font_size=17, font_family="cantarell")
+                self.set_center_label(None)
                 self.set_bottom_label(None)
                 self.set_media(media_path=default_media, size=0.9)
         except Exception:
-            self.set_top_label("\nInternal", color=[255, 100, 100], outline_width=1, font_size=17, font_family="cantarell")
-            self.set_center_label("Error", color=[255, 100, 100], outline_width=1, font_size=17, font_family="cantarell")
+            self.set_top_label("\nInternal\nError", color=[255, 100, 100], outline_width=1, font_size=17, font_family="cantarell")
+            self.set_center_label(None)
             self.set_bottom_label(None)
             self.set_media(media_path=default_media, size=0.9)
 
