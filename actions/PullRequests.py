@@ -27,12 +27,14 @@ class PullRequestsActions(ActionBase):
         self.owner = ""
         self.repo = ""
         self.refresh_rate = 60
+        self._refresh_timer_id = None  # For periodic refresh
 
     def on_ready(self) -> None:
         # Set an icon if available, otherwise skip
         icon_path = os.path.join(self.plugin_base.PATH, "assets", "info.png")
         if os.path.exists(icon_path):
             self.set_media(media_path=icon_path, size=0.75)
+        self.start_refresh_timer()
 
     def on_key_down(self) -> None:
         print("PullRequests: Key down event triggered")
@@ -73,6 +75,7 @@ class PullRequestsActions(ActionBase):
 
     def on_token_changed(self, entry):
         self.github_token = entry.get_text()
+        self.fetch_and_display_pull_request_count()
 
     def on_repo_url_changed(self, entry):
         self.repo_url = entry.get_text()
@@ -86,8 +89,77 @@ class PullRequestsActions(ActionBase):
         else:
             self.owner = ""
             self.repo = ""
+        self.fetch_and_display_pull_request_count()
 
     def on_refresh_rate_changed(self, widget, value, old):
         # value is the new selected value from ComboRow
         if value is not None:
-            self.refresh_rate = int(value)
+            try:
+                self.refresh_rate = int(value)
+            except Exception:
+                self.refresh_rate = 60
+            self.start_refresh_timer()
+
+    def fetch_and_display_pull_request_count(self):
+        try:
+            import requests
+            if not self.owner or not self.repo or not self.github_token:
+                self.set_bottom_label("Missing repo info or token", color=[255, 100, 100])
+                return
+
+            url = f"https://api.github.com/repos/{self.owner}/{self.repo}/pulls"
+            headers = {
+                "Authorization": f"token {self.github_token}",
+                "Accept": "application/vnd.github.v3+json"
+            }
+
+            try:
+                response = requests.get(url, headers=headers, timeout=10)
+                if response.status_code == 200:
+                    pulls = response.json()
+                    pr_count = len(pulls)
+                    self.set_bottom_label(f"Open PRs: {pr_count}", color=[100, 255, 100])
+                else:
+                    self.set_bottom_label(f"Error: {response.status_code}", color=[255, 100, 100])
+            except Exception:
+                self.set_bottom_label(f"Request failed", color=[255, 100, 100])
+        except Exception:
+            self.set_bottom_label("Internal error", color=[255, 100, 100])
+
+    def start_refresh_timer(self):
+        try:
+            from gi.repository import GLib
+        except ImportError:
+            return
+
+        # Cancel any existing timer
+        if self._refresh_timer_id is not None:
+            try:
+                GLib.source_remove(self._refresh_timer_id)
+            except Exception:
+                pass
+            self._refresh_timer_id = None
+
+        # Don't start if refresh_rate is 0 or less
+        if not isinstance(self.refresh_rate, int) or self.refresh_rate <= 0:
+            return
+
+        def _timer_callback():
+            try:
+                self.fetch_and_display_pull_request_count()
+            except Exception:
+                pass  # Never crash the app
+            return True  # Continue timer
+
+        try:
+            self._refresh_timer_id = GLib.timeout_add_seconds(self.refresh_rate * 60, _timer_callback)
+        except Exception:
+            self._refresh_timer_id = None
+
+    def __del__(self):
+        try:
+            from gi.repository import GLib
+            if self._refresh_timer_id is not None:
+                GLib.source_remove(self._refresh_timer_id)
+        except Exception:
+            pass
