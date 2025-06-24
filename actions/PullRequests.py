@@ -5,6 +5,8 @@ from src.backend.PluginManager.ActionHolder import ActionHolder
 
 # Import python modules
 import os
+from loguru import logger as log
+import requests
 
 # Import gtk modules - used for the config rows (optional, for future UI)
 import gi
@@ -32,11 +34,12 @@ class PullRequestsActions(ActionBase):
         self.start_refresh_timer()
 
     def on_key_down(self) -> None:
-        print("PullRequests: Key down event triggered")
+        log.info("PullRequests: Key down event triggered")
         # Placeholder for logic to fetch/display pull requests
 
     def on_key_up(self) -> None:
-        print("PullRequests: Key up event triggered")
+
+        log.info("PullRequests: Key up event triggered")
         # Placeholder for logic to clear or update UI
 
     def get_config_rows(self):
@@ -56,15 +59,16 @@ class PullRequestsActions(ActionBase):
         repo_entry.connect("notify::text", self.on_repo_url_changed)
 
         # ComboRow for refresh rate
-        refresh_options = ["0", "10", "30", "60"]
-        refresh_rate_row = ComboRow(
-            action_core=self,
-            var_name="refresh_rate",
-            default_value=str(refresh_rate),
-            items=refresh_options,
-            title="Refresh Rate (minutes)",
-            on_change=self.on_refresh_rate_changed
-        )
+        if not hasattr(self, "refresh_rate_row"):
+            refresh_options = ["0", "10", "30", "60"]
+            refresh_rate_row = ComboRow(
+                action_core=self,
+                var_name="refresh_rate",
+                default_value=str(refresh_rate),
+                items=refresh_options,
+                title="Refresh Rate (minutes)",
+                on_change=self.on_refresh_rate_changed
+            )
 
         return [token_entry, repo_entry, refresh_rate_row.widget]
 
@@ -72,22 +76,22 @@ class PullRequestsActions(ActionBase):
         settings = self.get_settings()
         settings["github_token"] = entry.get_text()
         self.set_settings(settings)
-        print(f"[DEBUG] github_token: {settings.get('github_token', '')}")
-        print(f"[DEBUG] repo_url: {settings.get('repo_url', '')}")
+        log.warning(f"[DEBUG] github_token: {settings.get('github_token', '')}")
+        log.warning(f"[DEBUG] repo_url: {settings.get('repo_url', '')}")
         owner, repo = self.parse_owner_repo(settings.get("repo_url", ""))
-        print(f"[DEBUG] owner: {owner}")
-        print(f"[DEBUG] repo: {repo}")
+        log.warning(f"[DEBUG] owner: {owner}")
+        log.warning(f"[DEBUG] repo: {repo}")
         self.fetch_and_display_pull_request_count()
 
     def on_repo_url_changed(self, entry, *args):
         settings = self.get_settings()
         settings["repo_url"] = entry.get_text()
         self.set_settings(settings)
-        print(f"[DEBUG] github_token: {settings.get('github_token', '')}")
-        print(f"[DEBUG] repo_url: {settings.get('repo_url', '')}")
+        log.warning(f"[DEBUG] github_token: {settings.get('github_token', '')}")
+        log.warning(f"[DEBUG] repo_url: {settings.get('repo_url', '')}")
         owner, repo = self.parse_owner_repo(settings.get("repo_url", ""))
-        print(f"[DEBUG] owner: {owner}")
-        print(f"[DEBUG] repo: {repo}")
+        log.warning(f"[DEBUG] owner: {owner}")
+        log.warning(f"[DEBUG] repo: {repo}")
         self.fetch_and_display_pull_request_count()
 
     def on_refresh_rate_changed(self, widget, value, old):
@@ -99,7 +103,6 @@ class PullRequestsActions(ActionBase):
 
     def fetch_and_display_pull_request_count(self):
         try:
-            import requests
             settings = self.get_settings()
             github_token = settings.get("github_token", "")
             repo_url = settings.get("repo_url", "")
