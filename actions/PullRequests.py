@@ -119,9 +119,9 @@ class PullRequestsActions(ActionBase):
         self.set_top_label(None)
         self.set_center_label(None)
         self.set_bottom_label(None)
-        if status == "error":
+        if status == "success":
             self.set_background_color(color=[0, 0, 0, 0], update=True)
-        elif status == "success":
+        elif status == "error":
             self.set_background_color(color=[255, 255, 255, 255], update=True)
 
     def fetch_and_display_pull_request_count(self):
