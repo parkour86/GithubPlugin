@@ -112,7 +112,11 @@ class PullRequestsActions(ActionBase):
         self.set_bottom_label(None)
 
     def fetch_and_display_pull_request_count(self):
+        # Common red label parameters
+        red = [255, 100, 100]
+        kwargs = {"color": red, "outline_width": 1, "font_size": 17, "font_family": "cantarell"}
         default_media = os.path.join(self.plugin_base.PATH, "assets", "info.png")
+
         try:
             settings = self.get_settings()
             github_token = settings.get("github_token", "")
@@ -121,6 +125,9 @@ class PullRequestsActions(ActionBase):
             log.info(f"[DEBUG] Fetching pull requests for {owner}/{repo}")
 
             if not owner or not repo or not github_token:
+                self.clear_labels()
+                self.set_top_label("\nConfigure\nGithub\nPlugin", **kwargs)
+                self.set_media(media_path=default_media, size=0.9)
                 #self.set_bottom_label("Missing Info", color=[255, 100, 100], outline_width=1, font_family="cantarell")
                 return
 
@@ -148,9 +155,6 @@ class PullRequestsActions(ActionBase):
                         self.fetch_and_set_commit_status_icons(owner, repo, shas)
                 else:
                     self.clear_labels()
-                    # Common red label parameters
-                    red = [255, 100, 100]
-                    kwargs = {"color": red, "outline_width": 1, "font_size": 17, "font_family": "cantarell"}
 
                     if status == 404:
                         self.set_top_label("\nInvalid\nRepo URL", **kwargs)
@@ -165,11 +169,11 @@ class PullRequestsActions(ActionBase):
 
             except Exception:
                 self.clear_labels()
-                self.set_top_label("\nRequest\nFailed", color=[255, 100, 100], outline_width=1, font_size=17, font_family="cantarell")
+                self.set_top_label("\nRequest\nFailed", **kwargs)
                 self.set_media(media_path=default_media, size=0.9)
         except Exception:
             self.clear_labels()
-            self.set_top_label("\nInternal\nError", color=[255, 100, 100], outline_width=1, font_size=17, font_family="cantarell")
+            self.set_top_label("\nInternal\nError", **kwargs)
             self.set_media(media_path=default_media, size=0.9)
 
     def fetch_and_set_commit_status_icons(self, owner, repo, shas):
