@@ -32,7 +32,7 @@ class PullRequestsActions(ActionBase):
         if os.path.exists(icon_path):
             self.set_media(media_path=icon_path, size=0.75)
         self.set_top_label("Configure", color=[255, 100, 100])
-        self.set_center_label(NONE)
+        self.set_center_label(None)
         self.set_bottom_label("Button", color=[255, 100, 100])
         self.set_background_color(color=[255, 255, 255, 255], update=True)
         self.start_refresh_timer()
