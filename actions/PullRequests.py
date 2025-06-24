@@ -30,8 +30,8 @@ class PullRequestsActions(ActionBase):
         # Set an icon if available, otherwise skip
         self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
         self.set_background_color(color=[255, 255, 255, 255], update=True)
-        self.set_top_label("Configure", color=[255, 100, 100], outline_width=1, font_size=18)
-        self.set_center_label("Button", color=[255, 100, 100], outline_width=1, font_size=18)
+        self.set_top_label("\nConfigure", color=[255, 100, 100], outline_width=1, font_size=17)
+        self.set_center_label("Button", color=[255, 100, 100], outline_width=1, font_size=17)
         self.set_bottom_label(None)
         self.start_refresh_timer()
 
@@ -108,6 +108,7 @@ class PullRequestsActions(ActionBase):
         self.start_refresh_timer()
 
     def fetch_and_display_pull_request_count(self):
+        default_media = os.path.join(self.plugin_base.PATH, "assets", "info.png")
         try:
             settings = self.get_settings()
             github_token = settings.get("github_token", "")
@@ -128,7 +129,6 @@ class PullRequestsActions(ActionBase):
             try:
                 response = requests.get(url, headers=headers, timeout=10)
                 status = response.status_code
-                default_media = os.path.join(self.plugin_base.PATH, "assets", "info.png")
 
                 if status == 200:
                     pulls = response.json()
@@ -163,9 +163,15 @@ class PullRequestsActions(ActionBase):
                         self.set_media(media_path=default_media, size=0.9)
 
             except Exception:
-                self.set_bottom_label("Request failed", color=[255, 100, 100], outline_width=1)
+                self.set_top_label("\nRequest", color=[255, 100, 100], outline_width=1, font_size=17, font_family="cantarell")
+                self.set_center_label("Failed", color=[255, 100, 100], outline_width=1, font_size=17, font_family="cantarell")
+                self.set_bottom_label(None)
+                self.set_media(media_path=default_media, size=0.9)
         except Exception:
-            self.set_bottom_label("Internal error", color=[255, 100, 100], outline_width=1)
+            self.set_top_label("\nInternal", color=[255, 100, 100], outline_width=1, font_size=17, font_family="cantarell")
+            self.set_center_label("Error", color=[255, 100, 100], outline_width=1, font_size=17, font_family="cantarell")
+            self.set_bottom_label(None)
+            self.set_media(media_path=default_media, size=0.9)
 
     def fetch_and_set_commit_status_icons(self, owner, repo, shas):
         import requests
