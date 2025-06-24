@@ -93,7 +93,7 @@ class ContributionsActions(ActionBase):
             default_value="",  # No default selected
             items=month_labels,
             title="Display Contribution Month",
-            on_change=self.on_display_month_changed if hasattr(self, "on_display_month_changed") else None,
+            on_change=self.on_display_month_changed,
             auto_add=False
         )
 
@@ -128,6 +128,19 @@ class ContributionsActions(ActionBase):
             self.set_background_color(color=[0, 0, 0, 0], update=True)
         elif status == "error":
             self.set_background_color(color=[255, 255, 255, 255], update=True)
+
+    def on_display_month_changed(self, widget, value, old):
+        # value is the selected label, e.g., "Jul-Sep"
+        settings = self.get_settings()
+        selected_label = value.get_value() if hasattr(value, "get_value") else value
+        # Try to find the corresponding image for the selected label
+        # Use cached quarter_labels and quarter_images if available
+        if hasattr(self, "_quarter_labels") and hasattr(self, "_quarter_images"):
+            if selected_label in self._quarter_labels:
+                idx = self._quarter_labels.index(selected_label)
+                img_path = self._quarter_images[idx]
+                if img_path:
+                    self.set_media(media_path=img_path, size=0.9)
 
     @staticmethod
     def get_quarter_ranges(last_date):
@@ -266,6 +279,7 @@ class ContributionsActions(ActionBase):
                 quarter_images = []
                 plugin_path = self.plugin_base.PATH
 
+                quarter_labels = []
                 for idx, (start, end) in enumerate(quarter_ranges):
                     count = 0
                     cell_map = {}
@@ -280,6 +294,8 @@ class ContributionsActions(ActionBase):
                                 week_indices.add(week_idx)
                                 count += c
                     quarter_counts.append(count)
+                    label = f"{start.strftime('%b')}-{end.strftime('%b')}"
+                    quarter_labels.append(label)
                     if week_indices:
                         sorted_weeks = sorted(week_indices)
                         img_path = self.save_contributions_image(cell_map, sorted_weeks, idx, plugin_path)
@@ -287,15 +303,19 @@ class ContributionsActions(ActionBase):
                     else:
                         quarter_images.append(None)
 
+                # Cache for ComboRow on_change
+                self._quarter_labels = quarter_labels
+                self._quarter_images = quarter_images
+
                 # Display the most recent quarter with data and image
                 for i in reversed(range(4)):
                     if quarter_counts[i] > 0:
-                        #qnum = i + 1
+                        qnum = i + 1
                         start, end = quarter_ranges[i]
-                        label = f"{start.strftime('%b')}-{end.strftime('%b')}"
+                        label = quarter_labels[i]
                         self.clear_labels("success")
-                        self.set_top_label(f"{quarter_counts[i]}", color=[100, 255, 100], outline_width=4, font_size=18, font_family="cantarell")
-                        self.set_bottom_label(label, color=[100, 200, 255], outline_width=2, font_size=18, font_family="cantarell")
+                        self.set_center_label(label, color=[100, 200, 255], outline_width=2, font_size=18, font_family="cantarell")
+                        self.set_bottom_label(f"{quarter_counts[i]} contributions", color=[100, 255, 100], outline_width=4, font_size=18, font_family="cantarell")
                         # Show the generated image for this quarter if available
                         if quarter_images[i]:
                             self.set_media(media_path=quarter_images[i], size=0.9)
