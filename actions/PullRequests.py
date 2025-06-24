@@ -36,9 +36,9 @@ class PullRequestsActions(ActionBase):
             self.fetch_and_display_pull_request_count()
         else:
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
-            self.set_background_color(color=[255, 255, 255, 255], update=True)
             self.clear_labels()
             self.set_top_label("\nConfigure\nGithub\nPlugin", color=[255, 100, 100], outline_width=1, font_size=17)
+            self.set_background_color(color=[255, 255, 255, 255], update=True)
         self.start_refresh_timer()
 
     def on_key_down(self) -> None:
@@ -117,6 +117,7 @@ class PullRequestsActions(ActionBase):
         self.set_top_label(None)
         self.set_center_label(None)
         self.set_bottom_label(None)
+        self.set_background_color([0, 0, 0, 0], update=True)
 
     def fetch_and_display_pull_request_count(self):
         # Common red label parameters
@@ -153,7 +154,6 @@ class PullRequestsActions(ActionBase):
                     pulls = response.json()
                     pr_count = len(pulls)
                     self.clear_labels()
-                    self.set_background_color(None, update=True)
                     self.set_center_label("PRs", color=[100, 255, 100], outline_width=2, font_size=20, font_family="cantarell")
                     self.set_bottom_label(f"{pr_count}", color=[100, 255, 100], outline_width=4, font_size=20, font_family="cantarell")
                     # Set default gray Github icon
