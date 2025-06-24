@@ -28,7 +28,7 @@ class PullRequestsActions(ActionBase):
 
     def on_ready(self) -> None:
         # Set an icon if available, otherwise skip
-        icon_path = os.path.join(self.plugin_base.PATH, "assets", "info.png")
+        icon_path = os.path.join(self.plugin_base.PATH, "assets", "info_black.png")
         if os.path.exists(icon_path):
             self.set_media(media_path=icon_path, size=0.75)
         self.set_center_label("PRs")
@@ -135,7 +135,7 @@ class PullRequestsActions(ActionBase):
                     shas = [pr["head"]["sha"] for pr in pulls if "head" in pr and "sha" in pr["head"]]
                     self.fetch_and_set_commit_status_icons(owner, repo, shas)
                 else:
-                    self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"))
+                    self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info_black.png"))
             except Exception:
                 self.set_bottom_label("Request failed", color=[255, 100, 100])
         except Exception:
