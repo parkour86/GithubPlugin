@@ -4,6 +4,7 @@ from src.backend.PluginManager.ActionHolder import ActionHolder
 
 # Import actions
 from .actions.PullRequests import PullRequestsActions
+from .actions.Contributions import ContributionsActions
 
 class PullRequestsPlugin(PluginBase):
     def __init__(self):
@@ -17,6 +18,15 @@ class PullRequestsPlugin(PluginBase):
             action_name="Fetch PRs",
         )
         self.add_action_holder(self.pull_requests_holder)
+
+        # Register Contributions action
+        self.contributions_holder = ActionHolder(
+            plugin_base=self,
+            action_base=ContributionsActions,
+            action_id_suffix="ContributionsActions",
+            action_name="Contributions",
+        )
+        self.add_action_holder(self.contributions_holder)
 
         # Register plugin
         lm = self.locale_manager
