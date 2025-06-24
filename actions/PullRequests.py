@@ -30,7 +30,7 @@ class PullRequestsActions(ActionBase):
         # Set an icon if available, otherwise skip
         self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
         self.set_background_color(color=[255, 255, 255, 255], update=True)
-        self.set_top_label("\nConfigure\Github\nPlugin", color=[255, 100, 100], outline_width=1, font_size=17)
+        self.set_top_label("\nConfigure\nGithub\nPlugin", color=[255, 100, 100], outline_width=1, font_size=17)
         self.set_center_label(None)
         self.set_bottom_label(None)
         self.start_refresh_timer()
@@ -117,7 +117,7 @@ class PullRequestsActions(ActionBase):
             log.info(f"[DEBUG] Fetching pull requests for {owner}/{repo}")
 
             if not owner or not repo or not github_token:
-                self.set_bottom_label("Missing Info", color=[255, 100, 100], outline_width=1, font_family="cantarell")
+                #self.set_bottom_label("Missing Info", color=[255, 100, 100], outline_width=1, font_family="cantarell")
                 return
 
             url = f"https://api.github.com/repos/{owner}/{repo}/pulls"
@@ -148,7 +148,7 @@ class PullRequestsActions(ActionBase):
                         kwargs = {"color": red, "outline_width": 1, "font_size": 17, "font_family": "cantarell"}
 
                         if status == 404:
-                            self.set_top_label("\nInvalid\Repo URL", **kwargs)
+                            self.set_top_label("\nInvalid\nRepo URL", **kwargs)
 
                         elif status == 401:
                             self.set_top_label("\nInvalid\nToken", **kwargs)
