@@ -19,8 +19,9 @@ class PullRequestsPlugin(PluginBase):
         self.add_action_holder(self.pull_requests_holder)
 
         # Register plugin
+        lm = self.locale_manager
         self.register(
-            plugin_name="Github Plugin",
+            plugin_name=lm.get("plugin.name"),
             github_repo="https://github.com/parkour86/GithubPlugin",
             plugin_version="1.0.0",
             app_version="1.1.1-alpha"

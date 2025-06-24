@@ -30,13 +30,10 @@ class PullRequestsActions(ActionBase):
         settings = self.get_settings()
         github_token = settings.get("github_token", "")
         repo_url = settings.get("repo_url", "")
-        log.info(f"GithubPlugin: {github_token} {repo_url}")
         if github_token and repo_url and repo_url.startswith("https://github.com/"):
-            log.info("GithubPlugin: Valid token and URL")
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
             self.fetch_and_display_pull_request_count()
         else:
-            log.info("GithubPlugin: Invalid token or URL")
             self.clear_labels("error")
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
             self.set_top_label("\nConfigure\nGithub\nPlugin", color=[255, 100, 100], outline_width=1, font_size=17)
@@ -44,7 +41,6 @@ class PullRequestsActions(ActionBase):
         self.start_refresh_timer()
 
     def on_key_down(self) -> None:
-        log.info("PullRequests: Key down event triggered")
         settings = self.get_settings()
         repo_url = settings.get("repo_url", "")
         owner, repo = self.parse_owner_repo(repo_url)
