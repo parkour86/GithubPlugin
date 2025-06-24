@@ -28,7 +28,7 @@ class PullRequestsActions(ActionBase):
 
     def on_ready(self) -> None:
         # Set an icon if available, otherwise skip
-        icon_path = os.path.join(self.plugin_base.PATH, "assets", "info_black.png")
+        icon_path = os.path.join(self.plugin_base.PATH, "assets", "circle-info.svg")
         if os.path.exists(icon_path):
             self.set_media(media_path=icon_path, size=0.75)
         self.set_center_label("PRs")
@@ -114,7 +114,7 @@ class PullRequestsActions(ActionBase):
             owner, repo = self.parse_owner_repo(repo_url)
 
             if not owner or not repo or not github_token:
-                self.set_bottom_label("Missing repo info or token", color=[255, 100, 100])
+                self.set_bottom_label("Missing Info", color=[255, 100, 100])
                 return
 
             url = f"https://api.github.com/repos/{owner}/{repo}/pulls"
@@ -135,7 +135,7 @@ class PullRequestsActions(ActionBase):
                     shas = [pr["head"]["sha"] for pr in pulls if "head" in pr and "sha" in pr["head"]]
                     self.fetch_and_set_commit_status_icons(owner, repo, shas)
                 else:
-                    self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info_black.png"))
+                    self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "circle-info.svg"))
             except Exception:
                 self.set_bottom_label("Request failed", color=[255, 100, 100])
         except Exception:
