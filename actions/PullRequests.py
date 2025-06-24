@@ -45,7 +45,15 @@ class PullRequestsActions(ActionBase):
 
     def on_key_down(self) -> None:
         log.info("PullRequests: Key down event triggered")
-        # Placeholder for logic to fetch/display pull requests
+        settings = self.get_settings()
+        repo_url = settings.get("repo_url", "")
+        owner, repo = self.parse_owner_repo(repo_url)
+        if owner and repo:
+            import webbrowser
+            url = f"https://github.com/{owner}/{repo}/pulls"
+            webbrowser.open(url)
+        else:
+            log.warning("PullRequests: Cannot open PRs page, owner or repo missing.")
 
     def on_key_up(self) -> None:
 
@@ -64,7 +72,7 @@ class PullRequestsActions(ActionBase):
         token_entry.connect("notify::text", self.on_token_changed)
 
         # Repo URL entry
-        repo_entry = Adw.EntryRow(title="Repository URL (e.g. https://github.com/<owner>/<repo>)")
+        repo_entry = Adw.EntryRow(title="Repository URL")
         repo_entry.set_text(repo_url)
         repo_entry.connect("notify::text", self.on_repo_url_changed)
 
