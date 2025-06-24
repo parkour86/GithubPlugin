@@ -29,8 +29,8 @@ class PullRequestsActions(ActionBase):
     def on_ready(self) -> None:
         # Set an icon if available, otherwise skip
         self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
-        self.set_top_label("Configure", color=[255, 100, 100])
-        self.set_center_label("Button", color=[255, 100, 100])
+        self.set_top_label("Configure", color=[255, 100, 100], stroke_width=1)
+        self.set_center_label("Button", color=[255, 100, 100], stroke_width=1)
         self.set_bottom_label(None)
         self.set_background_color(color=[255, 255, 255, 255], update=True)
         self.start_refresh_timer()
@@ -130,7 +130,7 @@ class PullRequestsActions(ActionBase):
                     pr_count = len(pulls)
                     self.set_top_label(None)
                     self.set_center_label("PRs", stroke_width=1)
-                    self.set_bottom_label(pr_count, color=[100, 255, 100], stroke_width=1)
+                    self.set_bottom_label(f"{pr_count}", color=[100, 255, 100], stroke_width=1)
                     # Set default icon to gray
                     self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
                     # Extract SHAs and check commit statuses only if there are PRs
@@ -138,6 +138,8 @@ class PullRequestsActions(ActionBase):
                         shas = [pr["head"]["sha"] for pr in pulls if "head" in pr and "sha" in pr["head"]]
                         self.fetch_and_set_commit_status_icons(owner, repo, shas)
                 else:
+                    self.set_top_label("Configure", color=[255, 100, 100])
+                    self.set_center_label("Button", color=[255, 100, 100])
                     self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
             except Exception:
                 self.set_bottom_label("Request failed", color=[255, 100, 100], stroke_width=1)
