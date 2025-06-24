@@ -182,7 +182,9 @@ class PullRequestsActions(ActionBase):
 
     def parse_owner_repo(self, repo_url):
         import re
-        match = re.match(r"https?://github\\.com/([^/]+)/([^/]+)", repo_url)
+        match = re.match(r"https?://github\.com/([^/]+)/([^/]+)/?", repo_url)
         if match:
-            return match.group(1), match.group(2)
+            owner = match.group(1)
+            repo = match.group(2).rstrip(".git")
+            return owner, repo
         return "", ""
