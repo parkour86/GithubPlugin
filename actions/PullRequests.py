@@ -116,7 +116,7 @@ class PullRequestsActions(ActionBase):
             log.info(f"[DEBUG] Fetching pull requests for {owner}/{repo}")
 
             if not owner or not repo or not github_token:
-                self.set_bottom_label("Missing Info", color=[255, 100, 100], outline_width=1)
+                self.set_bottom_label("Missing Info", color=[255, 100, 100], outline_width=1, font_family="cantarell")
                 return
 
             url = f"https://api.github.com/repos/{owner}/{repo}/pulls"
@@ -127,23 +127,41 @@ class PullRequestsActions(ActionBase):
 
             try:
                 response = requests.get(url, headers=headers, timeout=10)
-                if response.status_code == 200:
+                status = response.status_code
+                default_media = os.path.join(self.plugin_base.PATH, "assets", "#circle-info.svg")
+
+                if status == 200:
                     pulls = response.json()
                     pr_count = len(pulls)
                     self.set_top_label(None)
-                    self.set_center_label("PRs", color=[100, 255, 100], outline_width=1, font_size=20, font_family="cantarell")
+                    self.set_center_label("PRs", color=[100, 255, 100], outline_width=2, font_size=20, font_family="cantarell")
                     self.set_bottom_label(f"{pr_count}", color=[100, 255, 100], outline_width=4, font_size=20, font_family="cantarell")
-                    # Set default icon to gray
+                    # Set default gray Github icon
                     self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
                     # Extract SHAs and check commit statuses only if there are PRs
                     if pr_count > 0:
                         shas = [pr["head"]["sha"] for pr in pulls if "head" in pr and "sha" in pr["head"]]
                         self.fetch_and_set_commit_status_icons(owner, repo, shas)
                 else:
-                    self.set_top_label("Configure", color=[255, 100, 100], outline_width=1, font_size=18)
-                    self.set_center_label("Button", color=[255, 100, 100], outline_width=1, font_size=18)
-                    self.set_bottom_label(None)
-                    self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
+                        # Common red label parameters
+                        red = [255, 100, 100]
+                        kwargs = {"color": red, "outline_width": 1, "font_size": 17, "font_family": "cantarell"}
+
+                        if status == 404:
+                            self.set_top_label("\nInvalid", **kwargs)
+                            self.set_center_label("Repo URL", **kwargs)
+
+                        elif status == 401:
+                            self.set_top_label("\nInvalid", **kwargs)
+                            self.set_center_label("Token", **kwargs)
+
+                        else:
+                            self.set_top_label("\nConfigure", **kwargs)
+                            self.set_center_label("Button", **kwargs)
+
+                        self.set_bottom_label(None)
+                        self.set_media(media_path=default_media, size=0.9)
+
             except Exception:
                 self.set_bottom_label("Request failed", color=[255, 100, 100], outline_width=1)
         except Exception:
