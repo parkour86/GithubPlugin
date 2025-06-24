@@ -22,11 +22,6 @@ class PullRequestsActions(ActionBase):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.github_token = ""
-        self.repo_url = ""
-        self.owner = ""
-        self.repo = ""
-        self.refresh_rate = 60
         self._refresh_timer_id = None  # For periodic refresh
 
     def on_ready(self) -> None:
@@ -45,71 +40,78 @@ class PullRequestsActions(ActionBase):
         # Placeholder for logic to clear or update UI
 
     def get_config_rows(self):
-        # EntryRow for GitHub Access Token
-        self.token_entry = Adw.EntryRow(
-            title="GitHub Access Token"
-        )
-        self.token_entry.set_text(self.github_token)
-        self.token_entry.connect("changed", self.on_token_changed)
+        settings = self.get_settings()
+        github_token = settings.get("github_token", "")
+        repo_url = settings.get("repo_url", "")
+        refresh_rate = settings.get("refresh_rate", "60")
 
-        # EntryRow for GitHub Repo URL
-        self.repo_entry = Adw.EntryRow(
-            title="Repository URL (e.g. https://github.com/owner/repo)"
-        )
-        self.repo_entry.set_text(self.repo_url)
-        self.repo_entry.connect("changed", self.on_repo_url_changed)
+        # Token entry
+        token_entry = Adw.EntryRow(title="GitHub Access Token")
+        token_entry.set_text(github_token)
+        token_entry.connect("notify::text", self.on_token_changed)
 
-        # ComboRow for Refresh Rate (dropdown with 0, 10, 30, 60; default 60)
+        # Repo URL entry
+        repo_entry = Adw.EntryRow(title="Repository URL (e.g. https://github.com/owner/repo)")
+        repo_entry.set_text(repo_url)
+        repo_entry.connect("notify::text", self.on_repo_url_changed)
+
+        # ComboRow for refresh rate
         refresh_options = ["0", "10", "30", "60"]
-        self.refresh_rate_row = ComboRow(
+        refresh_rate_row = ComboRow(
             action_core=self,
             var_name="refresh_rate",
-            default_value=str(self.refresh_rate),
+            default_value=str(refresh_rate),
             items=refresh_options,
             title="Refresh Rate (minutes)",
             on_change=self.on_refresh_rate_changed
         )
 
-        # Return the widgets so they are shown in the UI
-        return [self.token_entry, self.repo_entry, self.refresh_rate_row.widget]
+        return [token_entry, repo_entry, refresh_rate_row.widget]
 
-    def on_token_changed(self, entry):
-        self.github_token = entry.get_text()
+    def on_token_changed(self, entry, *args):
+        settings = self.get_settings()
+        settings["github_token"] = entry.get_text()
+        self.set_settings(settings)
+        print(f"[DEBUG] github_token: {settings.get('github_token', '')}")
+        print(f"[DEBUG] repo_url: {settings.get('repo_url', '')}")
+        owner, repo = self.parse_owner_repo(settings.get("repo_url", ""))
+        print(f"[DEBUG] owner: {owner}")
+        print(f"[DEBUG] repo: {repo}")
         self.fetch_and_display_pull_request_count()
 
-    def on_repo_url_changed(self, entry):
-        self.repo_url = entry.get_text()
-        # Parse owner and repo from the URL
-        # Example: https://github.com/owner/repo
-        import re
-        match = re.match(r"https?://github\\.com/([^/]+)/([^/]+)", self.repo_url)
-        if match:
-            self.owner = match.group(1)
-            self.repo = match.group(2)
-        else:
-            self.owner = ""
-            self.repo = ""
+    def on_repo_url_changed(self, entry, *args):
+        settings = self.get_settings()
+        settings["repo_url"] = entry.get_text()
+        self.set_settings(settings)
+        print(f"[DEBUG] github_token: {settings.get('github_token', '')}")
+        print(f"[DEBUG] repo_url: {settings.get('repo_url', '')}")
+        owner, repo = self.parse_owner_repo(settings.get("repo_url", ""))
+        print(f"[DEBUG] owner: {owner}")
+        print(f"[DEBUG] repo: {repo}")
         self.fetch_and_display_pull_request_count()
 
     def on_refresh_rate_changed(self, widget, value, old):
-        # value is the new selected value from ComboRow
+        settings = self.get_settings()
         if value is not None:
-            try:
-                self.refresh_rate = int(value)
-            except Exception:
-                self.refresh_rate = 60
-            self.start_refresh_timer()
+            settings["refresh_rate"] = value
+        self.set_settings(settings)
+        self.start_refresh_timer()
 
     def fetch_and_display_pull_request_count(self):
         try:
             import requests
-            if not self.owner or not self.repo or not self.github_token:
+            settings = self.get_settings()
+            github_token = settings.get("github_token", "")
+            repo_url = settings.get("repo_url", "")
+            owner, repo = self.parse_owner_repo(repo_url)
+
+            if not owner or not repo or not github_token:
                 self.set_bottom_label("Missing repo info or token", color=[255, 100, 100])
                 return
 
-            url = f"https://api.github.com/repos/{self.owner}/{self.repo}/pulls"
+            url = f"https://api.github.com/repos/{owner}/{repo}/pulls"
             headers = {
-                "Authorization": f"token {self.github_token}",
+                "Authorization": f"token {github_token}",
                 "Accept": "application/vnd.github.v3+json"
             }
 
@@ -122,7 +124,7 @@ class PullRequestsActions(ActionBase):
                 else:
                     self.set_bottom_label(f"Error: {response.status_code}", color=[255, 100, 100])
             except Exception:
-                self.set_bottom_label(f"Request failed", color=[255, 100, 100])
+                self.set_bottom_label("Request failed", color=[255, 100, 100])
         except Exception:
             self.set_bottom_label("Internal error", color=[255, 100, 100])
 
@@ -140,8 +142,16 @@ class PullRequestsActions(ActionBase):
                 pass
             self._refresh_timer_id = None
 
+        # Get refresh_rate from settings
+        settings = self.get_settings()
+        refresh_rate = settings.get("refresh_rate", "60")
+        try:
+            refresh_rate = int(refresh_rate)
+        except Exception:
+            refresh_rate = 60
+
         # Don't start if refresh_rate is 0 or less
-        if not isinstance(self.refresh_rate, int) or self.refresh_rate <= 0:
+        if not isinstance(refresh_rate, int) or refresh_rate <= 0:
             return
 
         def _timer_callback():
@@ -152,7 +162,7 @@ class PullRequestsActions(ActionBase):
             return True  # Continue timer
 
         try:
-            self._refresh_timer_id = GLib.timeout_add_seconds(self.refresh_rate * 60, _timer_callback)
+            self._refresh_timer_id = GLib.timeout_add_seconds(refresh_rate * 60, _timer_callback)
         except Exception:
             self._refresh_timer_id = None
 
@@ -163,3 +173,10 @@ class PullRequestsActions(ActionBase):
                 GLib.source_remove(self._refresh_timer_id)
         except Exception:
             pass
+
+    def parse_owner_repo(self, repo_url):
+        import re
+        match = re.match(r"https?://github\\.com/([^/]+)/([^/]+)", repo_url)
+        if match:
+            return match.group(1), match.group(2)
+        return "", ""
