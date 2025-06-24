@@ -28,10 +28,12 @@ class PullRequestsActions(ActionBase):
 
     def on_ready(self) -> None:
         # Set an icon if available, otherwise skip
-        icon_path = os.path.join(self.plugin_base.PATH, "assets", "circle-info.svg")
+        icon_path = os.path.join(self.plugin_base.PATH, "assets", "#595959.png")
         if os.path.exists(icon_path):
             self.set_media(media_path=icon_path, size=0.75)
-        self.set_center_label("PRs")
+        self.set_top_label("Configure", color=[255, 100, 100])
+        self.set_center_label(NONE)
+        self.set_bottom_label("Button", color=[255, 100, 100])
         self.set_background_color(color=[255, 255, 255, 255], update=True)
         self.start_refresh_timer()
 
@@ -48,7 +50,7 @@ class PullRequestsActions(ActionBase):
         settings = self.get_settings()
         github_token = settings.get("github_token", "")
         repo_url = settings.get("repo_url", "")
-        refresh_rate = settings.get("refresh_rate", "60")
+        refresh_rate = settings.get("refresh_rate", "0")
 
         # Token entry
         token_entry = Adw.EntryRow(title="GitHub Access Token")
@@ -128,6 +130,7 @@ class PullRequestsActions(ActionBase):
                 if response.status_code == 200:
                     pulls = response.json()
                     pr_count = len(pulls)
+                    self.set_center_label("PRs")
                     self.set_bottom_label(pr_count, color=[100, 255, 100])
                     # Set default icon to gray
                     self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"))
@@ -135,7 +138,7 @@ class PullRequestsActions(ActionBase):
                     shas = [pr["head"]["sha"] for pr in pulls if "head" in pr and "sha" in pr["head"]]
                     self.fetch_and_set_commit_status_icons(owner, repo, shas)
                 else:
-                    self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "circle-info.svg"))
+                    self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"))
             except Exception:
                 self.set_bottom_label("Request failed", color=[255, 100, 100])
         except Exception:
@@ -160,11 +163,14 @@ class PullRequestsActions(ActionBase):
                 continue
 
         # Set icon based on state priority
-        if "failure" in states or "failed" in states:
+        if "failure" in states:
+            # Set icon to red
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#A00000.png"))
         elif "pending" in states:
+            # Set icon to yellow
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#B7B700.png"))
         elif "success" in states:
+            # Set icon to green
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#236B23.png"))
 
     def start_refresh_timer(self):
