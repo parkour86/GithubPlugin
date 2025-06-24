@@ -97,7 +97,26 @@ class ContributionsActions(ActionBase):
             auto_add=False
         )
 
-        return [token_entry, user_entry, refresh_rate_row.widget, display_month_row.widget]
+        # Toggle for Show/Hide Contribution Count (top label)
+        show_top_label = settings.get("show_top_label", True)
+        show_top_label_row = Adw.SwitchRow(title="Show/Hide Contribution Count")
+        show_top_label_row.set_active(show_top_label)
+        show_top_label_row.connect("notify::active", self.on_show_top_label_changed)
+
+        # Toggle for Show/Hide Bottom Label
+        show_bottom_label = settings.get("show_bottom_label", True)
+        show_bottom_label_row = Adw.SwitchRow(title="Show/Hide Bottom Label")
+        show_bottom_label_row.set_active(show_bottom_label)
+        show_bottom_label_row.connect("notify::active", self.on_show_bottom_label_changed)
+
+        return [
+            token_entry,
+            user_entry,
+            refresh_rate_row.widget,
+            display_month_row.widget,
+            show_top_label_row,
+            show_bottom_label_row,
+        ]
 
     def on_token_changed(self, entry, *args):
         settings = self.get_settings()
@@ -128,6 +147,18 @@ class ContributionsActions(ActionBase):
             self.set_background_color(color=[0, 0, 0, 0], update=True)
         elif status == "error":
             self.set_background_color(color=[255, 255, 255, 255], update=True)
+
+    def on_show_top_label_changed(self, widget, *args):
+        settings = self.get_settings()
+        settings["show_top_label"] = widget.get_active()
+        self.set_settings(settings)
+        self.fetch_and_display_contributions()
+
+    def on_show_bottom_label_changed(self, widget, *args):
+        settings = self.get_settings()
+        settings["show_bottom_label"] = widget.get_active()
+        self.set_settings(settings)
+        self.fetch_and_display_contributions()
 
     def on_display_month_changed(self, widget, value, old):
         # value is the selected label, e.g., "Jul-Sep"
@@ -315,7 +346,18 @@ class ContributionsActions(ActionBase):
                         label = quarter_labels[i]
                         self.clear_labels("success")
                         self.set_center_label(label, color=[100, 200, 255], outline_width=2, font_size=18, font_family="cantarell")
-                        self.set_bottom_label(f"{quarter_counts[i]} contributions", color=[100, 255, 100], outline_width=4, font_size=18, font_family="cantarell")
+                        # Show/hide top label (contribution count)
+                        show_top_label = self.get_settings().get("show_top_label", True)
+                        if show_top_label:
+                            self.set_top_label(f"{quarter_counts[i]}", color=[100, 255, 100], outline_width=4, font_size=18, font_family="cantarell")
+                        else:
+                            self.set_top_label(None)
+                        # Show/hide bottom label
+                        show_bottom_label = self.get_settings().get("show_bottom_label", True)
+                        if show_bottom_label:
+                            self.set_bottom_label(f"{quarter_counts[i]} contributions", color=[100, 255, 100], outline_width=4, font_size=18, font_family="cantarell")
+                        else:
+                            self.set_bottom_label(None)
                         # Show the generated image for this quarter if available
                         if quarter_images[i]:
                             self.set_media(media_path=quarter_images[i], size=0.9)
