@@ -133,9 +133,10 @@ class PullRequestsActions(ActionBase):
                     self.set_bottom_label(pr_count, color=[100, 255, 100])
                     # Set default icon to gray
                     self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
-                    # Extract SHAs and check commit statuses
-                    shas = [pr["head"]["sha"] for pr in pulls if "head" in pr and "sha" in pr["head"]]
-                    self.fetch_and_set_commit_status_icons(owner, repo, shas)
+                    # Extract SHAs and check commit statuses only if there are PRs
+                    if pr_count > 0:
+                        shas = [pr["head"]["sha"] for pr in pulls if "head" in pr and "sha" in pr["head"]]
+                        self.fetch_and_set_commit_status_icons(owner, repo, shas)
                 else:
                     self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
             except Exception:
