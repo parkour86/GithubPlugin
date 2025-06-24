@@ -162,7 +162,7 @@ class PullRequestsActions(ActionBase):
                     self.set_center_label("PRs", color=[100, 255, 100], outline_width=2, font_size=20, font_family="cantarell")
                     self.set_bottom_label(f"{pr_count}", color=[100, 255, 100], outline_width=4, font_size=20, font_family="cantarell")
                     # Set default gray Github icon
-                    self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#236B23.png"), size=0.9)
+                    self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
                     # Extract SHAs and check commit statuses only if there are PRs
                     if pr_count > 0:
                         shas = [pr["head"]["sha"] for pr in pulls if "head" in pr and "sha" in pr["head"]]
