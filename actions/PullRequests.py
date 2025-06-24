@@ -59,16 +59,16 @@ class PullRequestsActions(ActionBase):
         repo_entry.connect("notify::text", self.on_repo_url_changed)
 
         # ComboRow for refresh rate
-        if not hasattr(self, "refresh_rate_row"):
-            refresh_options = ["0", "10", "30", "60"]
-            refresh_rate_row = ComboRow(
-                action_core=self,
-                var_name="refresh_rate",
-                default_value=str(refresh_rate),
-                items=refresh_options,
-                title="Refresh Rate (minutes)",
-                on_change=self.on_refresh_rate_changed
-            )
+        refresh_options = ["0", "10", "30", "60"]
+        refresh_rate_row = ComboRow(
+            action_core=self,
+            var_name="refresh_rate",
+            default_value=str(refresh_rate),
+            items=refresh_options,
+            title="Refresh Rate (minutes)",
+            on_change=self.on_refresh_rate_changed,
+            auto_add=False
+        )
 
         return [token_entry, repo_entry, refresh_rate_row.widget]
 
