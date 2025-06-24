@@ -30,15 +30,14 @@ class PullRequestsActions(ActionBase):
         settings = self.get_settings()
         github_token = settings.get("github_token", "")
         repo_url = settings.get("repo_url", "")
-        refresh_rate = settings.get("refresh_rate", "")
-        if github_token and repo_url and refresh_rate and repo_url.startswith("https://github.com/"):
+        if github_token and repo_url and repo_url.startswith("https://github.com/"):
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
             self.fetch_and_display_pull_request_count()
         else:
+            self.clear_labels("error")
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
-            self.clear_labels()
             self.set_top_label("\nConfigure\nGithub\nPlugin", color=[255, 100, 100], outline_width=1, font_size=17)
-            self.set_background_color(color=[255, 255, 255, 255], update=True)
+
         self.start_refresh_timer()
 
     def on_key_down(self) -> None:
@@ -113,11 +112,14 @@ class PullRequestsActions(ActionBase):
         self.set_settings(settings)
         self.start_refresh_timer()
 
-    def clear_labels(self):
+    def clear_labels(self, status):
         self.set_top_label(None)
         self.set_center_label(None)
         self.set_bottom_label(None)
-        self.set_background_color([0, 0, 0, 0], update=True)
+        if status == "error":
+            self.set_background_color([0, 0, 0, 0], update=True)
+        elif status == "success":
+            self.set_background_color(color=[255, 255, 255, 255], update=True)
 
     def fetch_and_display_pull_request_count(self):
         # Common red label parameters
@@ -133,7 +135,7 @@ class PullRequestsActions(ActionBase):
             log.info(f"[DEBUG] Fetching pull requests for {owner}/{repo}")
 
             if not owner or not repo or not github_token:
-                self.clear_labels()
+                self.clear_labels("error")
                 self.set_background_color(color=[255, 255, 255, 255], update=True)
                 self.set_top_label("\nConfigure\nGithub\nPlugin", **kwargs)
                 self.set_media(media_path=default_media, size=0.9)
@@ -153,7 +155,7 @@ class PullRequestsActions(ActionBase):
                 if status == 200:
                     pulls = response.json()
                     pr_count = len(pulls)
-                    self.clear_labels()
+                    self.clear_labels("success")
                     self.set_center_label("PRs", color=[100, 255, 100], outline_width=2, font_size=20, font_family="cantarell")
                     self.set_bottom_label(f"{pr_count}", color=[100, 255, 100], outline_width=4, font_size=20, font_family="cantarell")
                     # Set default gray Github icon
@@ -163,7 +165,7 @@ class PullRequestsActions(ActionBase):
                         shas = [pr["head"]["sha"] for pr in pulls if "head" in pr and "sha" in pr["head"]]
                         self.fetch_and_set_commit_status_icons(owner, repo, shas)
                 else:
-                    self.clear_labels()
+                    self.clear_labels("error")
 
                     if status == 404:
                         self.set_top_label("\nInvalid\nRepo URL", **kwargs)
@@ -178,12 +180,12 @@ class PullRequestsActions(ActionBase):
                     self.set_background_color(color=[255, 255, 255, 255], update=True)
 
             except Exception:
-                self.clear_labels()
+                self.clear_labels("error")
                 self.set_top_label("\nRequest\nFailed", **kwargs)
                 self.set_media(media_path=default_media, size=0.9)
                 self.set_background_color(color=[255, 255, 255, 255], update=True)
         except Exception:
-            self.clear_labels()
+            self.clear_labels("error")
             self.set_top_label("\nInternal\nError", **kwargs)
             self.set_media(media_path=default_media, size=0.9)
             self.set_background_color(color=[255, 255, 255, 255], update=True)
