@@ -31,6 +31,7 @@ class PullRequestsActions(ActionBase):
         icon_path = os.path.join(self.plugin_base.PATH, "assets", "info.png")
         if os.path.exists(icon_path):
             self.set_media(media_path=icon_path, size=0.75)
+        self.set_top_label("PRs")
         self.start_refresh_timer()
 
     def on_key_down(self) -> None:
@@ -126,13 +127,44 @@ class PullRequestsActions(ActionBase):
                 if response.status_code == 200:
                     pulls = response.json()
                     pr_count = len(pulls)
-                    self.set_bottom_label(f"Open PRs: {pr_count}", color=[100, 255, 100])
+                    self.set_bottom_label(pr_count, color=[100, 255, 100])
+                    # Set default icon to gray
+                    self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"))
+                    # Extract SHAs and check commit statuses
+                    shas = [pr["head"]["sha"] for pr in pulls if "head" in pr and "sha" in pr["head"]]
+                    self.fetch_and_set_commit_status_icons(owner, repo, shas)
                 else:
                     self.set_bottom_label(f"Error: {response.status_code}", color=[255, 100, 100])
             except Exception:
                 self.set_bottom_label("Request failed", color=[255, 100, 100])
         except Exception:
             self.set_bottom_label("Internal error", color=[255, 100, 100])
+
+    def fetch_and_set_commit_status_icons(self, owner, repo, shas):
+        import requests
+        states = []
+        for sha in shas:
+            url = f"https://api.github.com/repos/{owner}/{repo}/commits/{sha}/status"
+            headers = {
+                "Authorization": f"token {self.get_settings().get('github_token', '')}",
+                "Accept": "application/vnd.github.v3+json"
+            }
+            try:
+                response = requests.get(url, headers=headers, timeout=10)
+                if response.status_code == 200:
+                    data = response.json()
+                    state = data.get("state", "")
+                    states.append(state)
+            except Exception:
+                continue
+
+        # Set icon based on state priority
+        if "failure" in states or "failed" in states:
+            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#A00000.png"))
+        elif "pending" in states:
+            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#B7B700.png"))
+        elif "success" in states:
+            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#236B23.png"))
 
     def start_refresh_timer(self):
         try:
