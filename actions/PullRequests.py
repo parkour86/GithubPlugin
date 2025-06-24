@@ -29,10 +29,10 @@ class PullRequestsActions(ActionBase):
     def on_ready(self) -> None:
         # Set an icon if available, otherwise skip
         self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
-        self.set_top_label("Configure", color=[255, 100, 100], outline_width=1)
-        self.set_center_label("Button", color=[255, 100, 100], outline_width=1)
-        self.set_bottom_label(None)
         self.set_background_color(color=[255, 255, 255, 255], update=True)
+        self.set_top_label("Configure", color=[255, 100, 100], outline_width=1, font_size=18)
+        self.set_center_label("Button", color=[255, 100, 100], outline_width=1, font_size=18)
+        self.set_bottom_label(None)
         self.start_refresh_timer()
 
     def on_key_down(self) -> None:
@@ -56,7 +56,7 @@ class PullRequestsActions(ActionBase):
         token_entry.connect("notify::text", self.on_token_changed)
 
         # Repo URL entry
-        repo_entry = Adw.EntryRow(title="Repository URL (e.g. https://github.com/owner/repo)")
+        repo_entry = Adw.EntryRow(title="Repository URL (e.g. https://github.com/<owner>/<repo>)")
         repo_entry.set_text(repo_url)
         repo_entry.connect("notify::text", self.on_repo_url_changed)
 
@@ -78,23 +78,24 @@ class PullRequestsActions(ActionBase):
         settings = self.get_settings()
         settings["github_token"] = entry.get_text()
         self.set_settings(settings)
-        log.warning(f"[DEBUG] github_token: {settings.get('github_token', '')}")
-        log.warning(f"[DEBUG] repo_url: {settings.get('repo_url', '')}")
         owner, repo = self.parse_owner_repo(settings.get("repo_url", ""))
-        log.warning(f"[DEBUG] owner: {owner}")
-        log.warning(f"[DEBUG] repo: {repo}")
         self.fetch_and_display_pull_request_count()
 
     def on_repo_url_changed(self, entry, *args):
         settings = self.get_settings()
         settings["repo_url"] = entry.get_text()
         self.set_settings(settings)
-        log.warning(f"[DEBUG] github_token: {settings.get('github_token', '')}")
-        log.warning(f"[DEBUG] repo_url: {settings.get('repo_url', '')}")
         owner, repo = self.parse_owner_repo(settings.get("repo_url", ""))
-        log.warning(f"[DEBUG] owner: {owner}")
-        log.warning(f"[DEBUG] repo: {repo}")
         self.fetch_and_display_pull_request_count()
+
+    def parse_owner_repo(self, repo_url):
+        import re
+        match = re.match(r"https?://github\.com/([^/]+)/([^/]+)/?", repo_url)
+        if match:
+            owner = match.group(1)
+            repo = match.group(2).rstrip(".git")
+            return owner, repo
+        return "", ""
 
     def on_refresh_rate_changed(self, widget, value, old):
         settings = self.get_settings()
@@ -112,6 +113,7 @@ class PullRequestsActions(ActionBase):
             github_token = settings.get("github_token", "")
             repo_url = settings.get("repo_url", "")
             owner, repo = self.parse_owner_repo(repo_url)
+            log.info(f"Fetching pull requests for {owner}/{repo}")
 
             if not owner or not repo or not github_token:
                 self.set_bottom_label("Missing Info", color=[255, 100, 100], outline_width=1)
@@ -129,8 +131,8 @@ class PullRequestsActions(ActionBase):
                     pulls = response.json()
                     pr_count = len(pulls)
                     self.set_top_label(None)
-                    self.set_center_label("PRs", outline_width=1)
-                    self.set_bottom_label(f"{pr_count}", color=[100, 255, 100], outline_width=1)
+                    self.set_center_label("PRs", color=[100, 255, 100], outline_width=1, font_size=20, font_family="cantarell")
+                    self.set_bottom_label(f"{pr_count}", color=[100, 255, 100], outline_width=4, font_size=20, font_family="cantarell")
                     # Set default icon to gray
                     self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
                     # Extract SHAs and check commit statuses only if there are PRs
@@ -138,8 +140,8 @@ class PullRequestsActions(ActionBase):
                         shas = [pr["head"]["sha"] for pr in pulls if "head" in pr and "sha" in pr["head"]]
                         self.fetch_and_set_commit_status_icons(owner, repo, shas)
                 else:
-                    self.set_top_label("Configure", color=[255, 100, 100], outline_width=1)
-                    self.set_center_label("Button", color=[255, 100, 100], outline_width=1)
+                    self.set_top_label("Configure", color=[255, 100, 100], outline_width=1, font_size=18)
+                    self.set_center_label("Button", color=[255, 100, 100], outline_width=1, font_size=18)
                     self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
             except Exception:
                 self.set_bottom_label("Request failed", color=[255, 100, 100], outline_width=1)
@@ -220,12 +222,3 @@ class PullRequestsActions(ActionBase):
                 GLib.source_remove(self._refresh_timer_id)
         except Exception:
             pass
-
-    def parse_owner_repo(self, repo_url):
-        import re
-        match = re.match(r"https?://github\.com/([^/]+)/([^/]+)/?", repo_url)
-        if match:
-            owner = match.group(1)
-            repo = match.group(2).rstrip(".git")
-            return owner, repo
-        return "", ""
