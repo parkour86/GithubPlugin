@@ -355,7 +355,7 @@ class ContributionsActions(ActionBase):
                         # Show/hide bottom label
                         show_bottom_label = self.get_settings().get("show_bottom_label", True)
                         if show_bottom_label:
-                            self.set_bottom_label(f"{quarter_counts[i]} contributions", color=[100, 255, 100], outline_width=4, font_size=18, font_family="cantarell")
+                            self.set_bottom_label(label, color=[100, 200, 255], outline_width=2, font_size=18, font_family="cantarell")
                         else:
                             self.set_bottom_label(None)
                         # Show the generated image for this quarter if available
