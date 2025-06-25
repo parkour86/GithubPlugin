@@ -312,12 +312,12 @@ class ContributionsActions(ActionBase):
                 draw.rectangle([x, y, x + cell_size, y + cell_size], fill=color)
 
                 # Add black border if it's not the inactive color (#3d444d)
-                if color.lower() != "#3d444d":
-                    # Draw the border slightly inside to avoid double-thick lines
-                    draw.rectangle(
-                        [x + 0.5, y + 0.5, x + cell_size - 0.5, y + cell_size - 0.5],
-                        outline="black", width=1
-                    )
+                # if color.lower() != "#3d444d":
+                #     # Draw the border slightly inside to avoid double-thick lines
+                #     draw.rectangle(
+                #         [x + 0.5, y + 0.5, x + cell_size - 0.5, y + cell_size - 0.5],
+                #         outline="black", width=1
+                #     )
 
         img_path = os.path.join(plugin_path, f"contributions_img{quarter_idx+1}.png")
         img.save(img_path)
