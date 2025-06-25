@@ -293,7 +293,7 @@ class ContributionsActions(ActionBase):
         height = 7 * cell_size + (7 - 1) * padding
         num_weeks = len(sorted_weeks)
         num_cols = max(10, num_weeks)
-        img = Image.new("RGB", (num_cols * (cell_size + padding), height), "white") # type: ignore
+        img = Image.new("RGB", (num_cols * (cell_size + padding), height), "#d0d0d0") # type: ignore
         draw = ImageDraw.Draw(img)
         for local_w in range(num_cols):
             for d in range(7):
@@ -319,7 +319,7 @@ class ContributionsActions(ActionBase):
 
                 # Only add border to active (green) cells
                 if color.lower() not in ["#3d444d", "white"]:
-                    draw.rectangle(box, outline="#777777", width=1)
+                    draw.rectangle(box, outline="black", width=1)
 
 
         img_path = os.path.join(plugin_path, f"contributions_img{quarter_idx+1}.png")
