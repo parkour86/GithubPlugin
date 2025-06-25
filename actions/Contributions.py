@@ -278,13 +278,13 @@ class ContributionsActions(ActionBase):
         if count == 0:
             return "#3d444d"  # dark gray (inactive)
         elif count < 8:
-            return "#b6ff91"  # pastel green
+            return "#a3d9a5"  # light muted green
         elif count < 15:
-            return "#6fff57"  # lime green
+            return "#73c48f"  # medium soft green
         elif count < 22:
-            return "#2dff2d"  # bright green
+            return "#4ca96c"  # darker desaturated green
         else:
-            return "#00ff00"  # full bright neon green
+            return "#2d8659"  # strong, deep green
 
     # def save_contributions_image(self, cell_map, sorted_weeks, quarter_idx, plugin_path):
     #     # Image config
