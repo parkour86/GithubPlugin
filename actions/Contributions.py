@@ -73,14 +73,14 @@ class ContributionsActions(ActionBase):
         user_entry.set_text(github_user)
         user_entry.connect("notify::text", self.on_user_changed)
 
-        # ComboRow for refresh rate
-        refresh_options = ["0", "10", "30", "60"]
+        # ComboRow for refresh rate (hours)
+        refresh_options = ["0", "1", "6", "12", "24", "48"]
         refresh_rate_row = ComboRow(
             action_core=self,
             var_name="refresh_rate",
             default_value=str(refresh_rate),
             items=refresh_options,
-            title="Refresh Rate (minutes)",
+            title="Refresh Rate (hours)",
             on_change=self.on_refresh_rate_changed,
             auto_add=False
         )
@@ -482,11 +482,11 @@ class ContributionsActions(ActionBase):
 
         # Get refresh_rate from settings
         settings = self.get_settings()
-        refresh_rate = settings.get("refresh_rate", "60")
+        refresh_rate = settings.get("refresh_rate", "0")
         try:
             refresh_rate = int(refresh_rate)
         except Exception:
-            refresh_rate = 60
+            refresh_rate = 0
 
         # Don't start if refresh_rate is 0 or less
         if not isinstance(refresh_rate, int) or refresh_rate <= 0:
@@ -500,7 +500,7 @@ class ContributionsActions(ActionBase):
             return True  # Continue timer
 
         try:
-            self._refresh_timer_id = GLib.timeout_add_seconds(refresh_rate * 60, _timer_callback)
+            self._refresh_timer_id = GLib.timeout_add_seconds(refresh_rate * 3600, _timer_callback)
         except Exception:
             self._refresh_timer_id = None
 
