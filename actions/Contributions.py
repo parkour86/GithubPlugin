@@ -208,6 +208,9 @@ class ContributionsActions(ActionBase):
     def on_display_month_changed(self, widget, value, old):
         settings = self.get_settings()
         selected_label = value.get_value() if hasattr(value, "get_value") else value
+        # Save only the month part to settings for refresh restoration
+        settings["selected_month"] = selected_label.split(" (")[0] if selected_label else ""
+        self.set_settings(settings)
 
         if hasattr(self, "_quarter_labels") and hasattr(self, "_quarter_images") and hasattr(self, "_quarter_counts"):
             filtered = [
