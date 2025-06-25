@@ -304,9 +304,9 @@ class ContributionsActions(ActionBase):
                         _, count = cell_map[key]
                         color = self.get_color(count)
                     else:
-                        color = "white"
+                        color = "#d0d0d0"
                 else:
-                    color = "white"
+                    color = "#d0d0d0"
                 x = local_w * (cell_size + padding)
                 y = d * (cell_size + padding)
                 #draw.rectangle([x, y, x + cell_size, y + cell_size], fill=color)
