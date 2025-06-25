@@ -84,9 +84,12 @@ class ContributionsActions(ActionBase):
         )
 
         # ComboRow for Display Contribution Month
-        # Use the bimonthly labels as options (e.g., 'Jan-Feb', 'Mar-Apr', etc.)
-        bimonthly_ranges = self.get_bimonthly_ranges(datetime.now())
-        month_labels = [f"{start.strftime('%b')}-{end.strftime('%b')}" for start, end in bimonthly_ranges]
+        # Only show periods for which images/data exist (populated after fetch)
+        month_labels = getattr(self, "_quarter_labels", None)
+        if not month_labels:
+            # fallback to all possible periods if not yet populated
+            bimonthly_ranges = self.get_bimonthly_ranges(datetime.now())
+            month_labels = [f"{start.strftime('%b')}-{end.strftime('%b')}" for start, end in bimonthly_ranges]
         display_month_row = ComboRow(
             action_core=self,
             var_name="display_contribution_month",
@@ -210,7 +213,7 @@ class ContributionsActions(ActionBase):
         padding = 2
         height = 7 * cell_size + (7 - 1) * padding
         num_weeks = len(sorted_weeks)
-        num_cols = max(14, num_weeks)
+        num_cols = max(10, num_weeks)
         img = Image.new("RGB", (num_cols * (cell_size + padding), height), "white") # type: ignore
         draw = ImageDraw.Draw(img)
         for local_w in range(num_cols):
