@@ -286,45 +286,6 @@ class ContributionsActions(ActionBase):
         else:
             return "#a3d9a5"  # light muted green
 
-    # def save_contributions_image(self, cell_map, sorted_weeks, quarter_idx, plugin_path):
-    #     # Image config
-    #     cell_size = 12
-    #     padding = 2
-    #     height = 7 * cell_size + (7 - 1) * padding
-    #     num_weeks = len(sorted_weeks)
-    #     num_cols = max(10, num_weeks)
-    #     img = Image.new("RGB", (num_cols * (cell_size + padding), height), "#d0d0d0") # type: ignore
-    #     draw = ImageDraw.Draw(img)
-    #     for local_w in range(num_cols):
-    #         for d in range(7):
-    #             if local_w < num_weeks:
-    #                 real_w = sorted_weeks[local_w]
-    #                 key = (real_w, d)
-    #                 if key in cell_map:
-    #                     _, count = cell_map[key]
-    #                     color = self.get_color(count)
-    #                 else:
-    #                     color = "white"
-    #             else:
-    #                 color = "white"
-    #             x = local_w * (cell_size + padding)
-    #             y = d * (cell_size + padding)
-    #             #draw.rectangle([x, y, x + cell_size, y + cell_size], fill=color)
-
-    #             # Outer box (including padding space)
-    #             box = [x, y, x + cell_size - 1, y + cell_size - 1]
-
-    #             # Always paint the full padded area white first (to hide gray padding for white cells)
-    #             if color.lower() == "white":
-    #                 draw.rectangle([x, y, x + cell_size, y + cell_size], fill="white")
-
-    #             # Draw the colored cell on top
-    #             draw.rectangle(box, fill=color)
-
-    #             # Only add border to active (green) cells
-    #             if color.lower() not in ["#3d444d", "white"]:
-    #                 draw.rectangle(box, outline="black", width=1)
-
     def save_contributions_image(self, cell_map, sorted_weeks, quarter_idx, plugin_path):
         cell_size = 12
         padding = 0  # ← Set padding to 0 to remove spacing
@@ -390,18 +351,18 @@ class ContributionsActions(ActionBase):
 
             query = """
             query($login: String!) {
-            user(login: $login) {
+              user(login: $login) {
                 contributionsCollection {
-                contributionCalendar {
+                  contributionCalendar {
                     weeks {
-                    contributionDays {
+                      contributionDays {
                         contributionCount
                         date
+                      }
                     }
-                    }
+                  }
                 }
-                }
-            }
+              }
             }
             """
 
@@ -442,18 +403,14 @@ class ContributionsActions(ActionBase):
                     self.set_background_color(color=[255, 255, 255, 255], update=True)
                     return
 
-                # Find the last date in the dataset (last day of last week)
                 last_week = weeks_data[-1]
                 last_day = last_week["contributionDays"][-1]["date"]
                 last_date = datetime.strptime(last_day, "%Y-%m-%d")
 
-                # Use staticmethod for bimonthly ranges
                 bimonthly_ranges = self.get_bimonthly_ranges(last_date)
-                bimonthly_counts = []
-                bimonthly_images = []
+                bimonthly_counts, bimonthly_images, bimonthly_labels = [], [], []
                 plugin_path = self.plugin_base.PATH
 
-                bimonthly_labels = []
                 for idx, (start, end) in enumerate(bimonthly_ranges):
                     count = 0
                     cell_map = {}
@@ -476,94 +433,109 @@ class ContributionsActions(ActionBase):
                     else:
                         bimonthly_images.append(None)
 
-                # Cache for ComboRow on_change
                 self._quarter_labels = bimonthly_labels
                 self._quarter_images = bimonthly_images
                 self._quarter_counts = bimonthly_counts
 
-                # Display the first bimonthly period with data and image (by default)
                 first_with_data = next(
                     ((lbl, img, cnt) for lbl, img, cnt in zip(bimonthly_labels, bimonthly_images, bimonthly_counts) if cnt > 0),
                     (None, None, None)
                 )
-                if first_with_data[0] is not None:
-                    label, img_path, count = first_with_data
-                    self.clear_labels("success")
-                    # Preserve current selection if possible
-                    current_selected = None
-                    if hasattr(self, "display_month_row") and self.display_month_row is not None:
-                        current_selected = self.display_month_row.get_value() if hasattr(self.display_month_row, "get_value") else None
-                        # Only repopulate if the labels have changed
-                        current_items = getattr(self.display_month_row, "items", None)
-                        def label_month_part(label):
-                            return label.split(" (")[0] if label else ""
-                        # Try to match by month part only
-                        selected_label = None
-                        if current_items is None or list(current_items) != list(bimonthly_labels):
-                            if current_selected:
-                                for lbl in bimonthly_labels:
-                                    if label_month_part(lbl) == label_month_part(current_selected):
-                                        selected_label = lbl
-                                        break
-                            if not selected_label:
-                                selected_label = label
-                            self.display_month_row.populate(bimonthly_labels, selected_item=selected_label, update_settings=True, trigger_callback=False)
-                        else:
-                            if current_selected:
-                                for lbl in bimonthly_labels:
-                                    if label_month_part(lbl) == label_month_part(current_selected):
-                                        selected_label = lbl
-                                        break
-                            if not selected_label:
-                                selected_label = label
-                    else:
-                        selected_label = label
 
-                    # Ensure selected_label is in bimonthly_labels, fallback to first if not
-                    if selected_label not in bimonthly_labels:
-                        idx = 0
-                        selected_label = bimonthly_labels[0]
-                    else:
-                        idx = bimonthly_labels.index(selected_label)
-                    img_path = bimonthly_images[idx]
-                    count = bimonthly_counts[idx]
-
-                    # Show/hide top label (contribution count)
-                    show_top_label = self.get_settings().get("show_top_label", True)
-                    if show_top_label:
-                        self.set_top_label(f"{count}", color=[100, 255, 100], outline_width=4, font_size=18, font_family="cantarell")
-                    else:
-                        self.set_top_label(None)
-                    # Show/hide bottom label
-                    show_bottom_label = self.get_settings().get("show_bottom_label", True)
-                    if show_bottom_label:
-                        # Show only the month range (without count) in the bottom label
-                        self.set_bottom_label(selected_label.split(" (")[0], color=[100, 255, 100], outline_width=2, font_size=16, font_family="cantarell")
-                    else:
-                        self.set_bottom_label(None)
-                    # Show the generated image for this period if available
-                    if img_path:
-                        self.set_media(media_path=img_path, size=0.68, valign=-.7)
-                    else:
-                        self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
-                    return
-                else:
+                if first_with_data[0] is None:
                     self.clear_labels("error")
                     self.set_top_label("\nActivity\nLog\nEmpty", **kwargs)
                     self.set_media(media_path=default_media, size=0.9)
                     self.set_background_color(color=[255, 255, 255, 255], update=True)
                     return
 
+                # Begin rendering content
+                label, img_path, count = first_with_data
+                self.clear_labels("success")
+
+                selected_label = label  # default to first with data
+                month_key = None
+
+                if hasattr(self, "display_month_row") and self.display_month_row is not None:
+                    month_key = self.get_settings().get("selected_month", None)
+                    current_items = getattr(self.display_month_row, "items", None)
+
+                    def label_month_part(lbl):
+                        return lbl.split(" (")[0] if lbl else ""
+
+                    if current_items is None or list(current_items) != list(bimonthly_labels):
+                        if month_key:
+                            for lbl in bimonthly_labels:
+                                if label_month_part(lbl) == month_key:
+                                    selected_label = lbl
+                                    break
+                        self.display_month_row.populate(
+                            bimonthly_labels,
+                            selected_item=selected_label,
+                            update_settings=False,
+                            trigger_callback=False
+                        )
+                        # Save only the month key
+                        self.get_settings()["selected_month"] = label_month_part(selected_label)
+                    else:
+                        if month_key:
+                            for lbl in bimonthly_labels:
+                                if label_month_part(lbl) == month_key:
+                                    selected_label = lbl
+                                    break
+
+                # Ensure selected_label is valid
+                if selected_label not in bimonthly_labels:
+                    selected_label = bimonthly_labels[0]
+                    idx = 0
+                else:
+                    idx = bimonthly_labels.index(selected_label)
+
+                img_path = bimonthly_images[idx]
+                count = bimonthly_counts[idx]
+
+                # Top label (count)
+                if self.get_settings().get("show_top_label", True):
+                    self.set_top_label(
+                        f"{count}",
+                        color=[100, 255, 100],
+                        outline_width=4,
+                        font_size=18,
+                        font_family="cantarell"
+                    )
+                else:
+                    self.set_top_label(None)
+
+                # Bottom label (month range)
+                if self.get_settings().get("show_bottom_label", True):
+                    self.set_bottom_label(
+                        selected_label.split(" (")[0],
+                        color=[100, 255, 100],
+                        outline_width=2,
+                        font_size=16,
+                        font_family="cantarell"
+                    )
+                else:
+                    self.set_bottom_label(None)
+
+                # Set contribution image
+                if img_path:
+                    self.set_media(media_path=img_path, size=0.68, valign=-.7)
+                else:
+                    self.set_media(media_path=default_media, size=0.9)
+
             except Exception:
                 self.clear_labels("error")
                 self.set_top_label("\nRequest\nFailed", **kwargs)
                 self.set_media(media_path=default_media, size=0.9)
                 self.set_background_color(color=[255, 255, 255, 255], update=True)
+
         except Exception:
             self.clear_labels("error")
             self.set_top_label("\nInternal\nError", **kwargs)
             self.set_media(media_path=default_media, size=0.9)
             self.set_background_color(color=[255, 255, 255, 255], update=True)
+
 
 
 
