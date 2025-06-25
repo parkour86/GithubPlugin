@@ -536,6 +536,7 @@ class ContributionsActions(ActionBase):
             self.set_media(media_path=default_media, size=0.9)
             self.set_background_color(color=[255, 255, 255, 255], update=True)
 
+#
 
 
 
