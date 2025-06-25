@@ -519,16 +519,14 @@ class ContributionsActions(ActionBase):
                     else:
                         selected_label = label
 
-                    # Find the index for the selected label
-                    try:
-                        idx = bimonthly_labels.index(selected_label)
-                        img_path = bimonthly_images[idx]
-                        count = bimonthly_counts[idx]
-                    except Exception:
+                    # Ensure selected_label is in bimonthly_labels, fallback to first if not
+                    if selected_label not in bimonthly_labels:
                         idx = 0
-                        img_path = bimonthly_images[0]
-                        count = bimonthly_counts[0]
                         selected_label = bimonthly_labels[0]
+                    else:
+                        idx = bimonthly_labels.index(selected_label)
+                    img_path = bimonthly_images[idx]
+                    count = bimonthly_counts[idx]
 
                     # Show/hide top label (contribution count)
                     show_top_label = self.get_settings().get("show_top_label", True)
