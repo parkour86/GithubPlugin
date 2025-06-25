@@ -403,7 +403,7 @@ class ContributionsActions(ActionBase):
                                 week_indices.add(week_idx)
                                 count += c
                     bimonthly_counts.append(count)
-                    label = f"{start.strftime('%b')}-{end.strftime('%b')}"
+                    label = f"{start.strftime('%b')}-{end.strftime('%b')} ({count})"
                     bimonthly_labels.append(label)
                     if week_indices:
                         img_path = self.save_contributions_image(cell_map, sorted(week_indices), idx, plugin_path)
