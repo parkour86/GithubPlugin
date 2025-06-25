@@ -362,7 +362,7 @@ class ContributionsActions(ActionBase):
                     draw.rectangle(box, outline="black", width=1)
 
                 if color.lower() in ["#3d444d"]:
-                    draw.rectangle(box, outline="#999999", width=1)
+                    draw.rectangle(box, outline="#777777", width=1)
 
         img_path = os.path.join(plugin_path, f"contributions_img{quarter_idx+1}.png")
         img.save(img_path)
