@@ -487,9 +487,32 @@ class ContributionsActions(ActionBase):
                 if first_with_data[0] is not None:
                     label, img_path, count = first_with_data
                     self.clear_labels("success")
-                    # Repopulate ComboRow items with new bimonthly_labels before setting value
+                    # Preserve current selection if possible
+                    current_selected = None
                     if hasattr(self, "display_month_row") and self.display_month_row is not None:
-                        self.display_month_row.populate(bimonthly_labels, selected_item=label, update_settings=True, trigger_callback=True)
+                        current_selected = self.display_month_row.get_value() if hasattr(self.display_month_row, "get_value") else None
+                        # Only repopulate if the labels have changed
+                        current_items = getattr(self.display_month_row, "items", None)
+                        if current_items is None or list(current_items) != list(bimonthly_labels):
+                            # If current selection is still valid, keep it; otherwise, use the first with data
+                            selected_label = current_selected if current_selected in bimonthly_labels else label
+                            self.display_month_row.populate(bimonthly_labels, selected_item=selected_label, update_settings=True, trigger_callback=False)
+                        else:
+                            selected_label = current_selected if current_selected in bimonthly_labels else label
+                    else:
+                        selected_label = label
+
+                    # Find the index for the selected label
+                    try:
+                        idx = bimonthly_labels.index(selected_label)
+                        img_path = bimonthly_images[idx]
+                        count = bimonthly_counts[idx]
+                    except Exception:
+                        idx = 0
+                        img_path = bimonthly_images[0]
+                        count = bimonthly_counts[0]
+                        selected_label = bimonthly_labels[0]
+
                     # Show/hide top label (contribution count)
                     show_top_label = self.get_settings().get("show_top_label", True)
                     if show_top_label:
@@ -500,7 +523,7 @@ class ContributionsActions(ActionBase):
                     show_bottom_label = self.get_settings().get("show_bottom_label", True)
                     if show_bottom_label:
                         # Show only the month range (without count) in the bottom label
-                        self.set_bottom_label(label.split(" (")[0], color=[100, 255, 100], outline_width=2, font_size=18, font_family="cantarell")
+                        self.set_bottom_label(selected_label.split(" (")[0], color=[100, 255, 100], outline_width=2, font_size=18, font_family="cantarell")
                     else:
                         self.set_bottom_label(None)
                     # Show the generated image for this period if available
@@ -514,6 +537,7 @@ class ContributionsActions(ActionBase):
                     self.set_top_label("\nActivity\nLog\nEmpty", **kwargs)
                     self.set_media(media_path=default_media, size=0.9)
                     self.set_background_color(color=[255, 255, 255, 255], update=True)
+                    return
 
             except Exception:
                 self.clear_labels("error")
