@@ -484,13 +484,10 @@ class ContributionsActions(ActionBase):
                                     selected_label = lbl
                                     break
 
-                # Ensure selected_label is valid
+                # Ensure img_path and count match the actual selected label
                 if selected_label not in bimonthly_labels:
                     selected_label = bimonthly_labels[0]
-                    idx = 0
-                else:
-                    idx = bimonthly_labels.index(selected_label)
-
+                idx = bimonthly_labels.index(selected_label)
                 img_path = bimonthly_images[idx]
                 count = bimonthly_counts[idx]
 
