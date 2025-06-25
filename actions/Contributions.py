@@ -209,8 +209,11 @@ class ContributionsActions(ActionBase):
         settings = self.get_settings()
         selected_label = value.get_value() if hasattr(value, "get_value") else value
         # Save only the month part to settings for refresh restoration
-        settings["selected_month"] = selected_label.split(" (")[0] if selected_label else ""
+        month_part = selected_label.split(" (")[0] if selected_label else ""
+        log.info(f"[DEBUG] on_display_month_changed: Saving selected_month = {month_part}")
+        settings["selected_month"] = month_part
         self.set_settings(settings)
+        log.info(f"[DEBUG] on_display_month_changed: settings after save: {self.get_settings()}")
 
         if hasattr(self, "_quarter_labels") and hasattr(self, "_quarter_images") and hasattr(self, "_quarter_counts"):
             filtered = [
