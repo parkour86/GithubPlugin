@@ -251,22 +251,33 @@ class ContributionsActions(ActionBase):
                     self.set_bottom_label(None)
 
     @staticmethod
+    # def get_bimonthly_ranges(last_date):
+    #     year = last_date.year
+    #     month = last_date.month
+    #     prev_year = year - 1
+    #     # 9 bimonthly periods: last 3 of prev year, 6 of current year
+    #     return [
+    #         (datetime(prev_year, 7, 1), datetime(prev_year, 8, 31)),   # Jul-Aug prev year
+    #         (datetime(prev_year, 9, 1), datetime(prev_year, 10, 31)),  # Sep-Oct prev year
+    #         (datetime(prev_year, 11, 1), datetime(prev_year, 12, 31)), # Nov-Dec prev year
+    #         (datetime(year, 1, 1), datetime(year, 2, 28 if year % 4 != 0 else 29)),   # Jan-Feb current year
+    #         (datetime(year, 3, 1), datetime(year, 4, 30)),             # Mar-Apr current year
+    #         (datetime(year, 5, 1), datetime(year, 6, 30)),             # May-Jun current year
+    #         (datetime(year, 7, 1), datetime(year, 8, 31)),             # Jul-Aug current year
+    #         (datetime(year, 9, 1), datetime(year, 10, 31)),            # Sep-Oct current year
+    #         (datetime(year, 11, 1), datetime(year, 12, 31)),           # Nov-Dec current year
+    #     ]
     def get_bimonthly_ranges(last_date):
-        year = last_date.year
-        month = last_date.month
-        prev_year = year - 1
-        # 9 bimonthly periods: last 3 of prev year, 6 of current year
-        return [
-            (datetime(prev_year, 7, 1), datetime(prev_year, 8, 31)),   # Jul-Aug prev year
-            (datetime(prev_year, 9, 1), datetime(prev_year, 10, 31)),  # Sep-Oct prev year
-            (datetime(prev_year, 11, 1), datetime(prev_year, 12, 31)), # Nov-Dec prev year
-            (datetime(year, 1, 1), datetime(year, 2, 28 if year % 4 != 0 else 29)),   # Jan-Feb current year
-            (datetime(year, 3, 1), datetime(year, 4, 30)),             # Mar-Apr current year
-            (datetime(year, 5, 1), datetime(year, 6, 30)),             # May-Jun current year
-            (datetime(year, 7, 1), datetime(year, 8, 31)),             # Jul-Aug current year
-            (datetime(year, 9, 1), datetime(year, 10, 31)),            # Sep-Oct current year
-            (datetime(year, 11, 1), datetime(year, 12, 31)),           # Nov-Dec current year
-        ]
+        from dateutil.relativedelta import relativedelta
+
+        # Go back 6 bimonthly periods (12 months total)
+        ranges = []
+        current_end = last_date.replace(day=1) + relativedelta(months=1) - relativedelta(days=1)
+        for _ in range(6):
+            current_start = current_end.replace(day=1) - relativedelta(months=1)
+            ranges.insert(0, (current_start, current_end))  # prepend
+            current_end = current_start - relativedelta(days=1)
+        return ranges
 
     def get_color(self, count):
         # GitHub-like color scale
