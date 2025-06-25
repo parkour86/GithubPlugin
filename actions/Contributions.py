@@ -217,7 +217,7 @@ class ContributionsActions(ActionBase):
                 img_path = filtered_images[idx]
                 count = filtered_counts[idx]
                 if img_path:
-                    self.set_media(media_path=img_path, size=0.49)
+                    self.set_media(media_path=img_path, size=0.68)
 
                 # ✅ Update the top label (contribution count) for the selected period
                 show_top_label = settings.get("show_top_label", True)
@@ -235,9 +235,10 @@ class ContributionsActions(ActionBase):
                 # ✅ Update the bottom label too
                 show_bottom_label = settings.get("show_bottom_label", True)
                 if show_bottom_label:
+                    # Show only the month range (without count) in the bottom label
                     self.set_bottom_label(
-                        selected_label,
-                        color=[100, 200, 255],
+                        selected_label.split(" (")[0],
+                        color=[100, 255, 100],
                         outline_width=2,
                         font_size=18,
                         font_family="cantarell"
@@ -319,7 +320,7 @@ class ContributionsActions(ActionBase):
             if not github_token or not github_user:
                 self.clear_labels("error")
                 self.set_background_color(color=[255, 255, 255, 255], update=True)
-                self.set_top_label("\nConfigure\nContributions\nPlugin", **kwargs)
+                self.set_top_label("\nConfigure\nGithub\nPlugin", **kwargs)
                 self.set_media(media_path=default_media, size=0.9)
                 return
 
@@ -403,7 +404,7 @@ class ContributionsActions(ActionBase):
                                 week_indices.add(week_idx)
                                 count += c
                     bimonthly_counts.append(count)
-                    label = f"{start.strftime('%b')}-{end.strftime('%b')} ({count})"
+                    label = f"{start.strftime('%b').upper()}-{end.strftime('%b').upper()} ({count})"
                     bimonthly_labels.append(label)
                     if week_indices:
                         img_path = self.save_contributions_image(cell_map, sorted(week_indices), idx, plugin_path)
@@ -436,12 +437,13 @@ class ContributionsActions(ActionBase):
                     # Show/hide bottom label
                     show_bottom_label = self.get_settings().get("show_bottom_label", True)
                     if show_bottom_label:
-                        self.set_bottom_label(label, color=[100, 200, 255], outline_width=2, font_size=18, font_family="cantarell")
+                        # Show only the month range (without count) in the bottom label
+                        self.set_bottom_label(label.split(" (")[0], color=[100, 200, 255], outline_width=2, font_size=18, font_family="cantarell")
                     else:
                         self.set_bottom_label(None)
                     # Show the generated image for this period if available
                     if img_path:
-                        self.set_media(media_path=img_path, size=0.49)
+                        self.set_media(media_path=img_path, size=0.68)
                     else:
                         self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
                     return
