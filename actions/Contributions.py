@@ -310,8 +310,6 @@ class ContributionsActions(ActionBase):
                 x = local_w * (cell_size + padding)
                 y = d * (cell_size + padding)
                 draw.rectangle([x, y, x + cell_size, y + cell_size], fill=color)
-                # Draw filled cell
-                draw.rectangle([x, y, x + cell_size, y + cell_size], fill=color)
 
                 # Add border only if it's an active (green) cell
                 if color.lower() not in ["#3d444d", "white"]:
