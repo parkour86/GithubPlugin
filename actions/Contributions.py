@@ -286,15 +286,56 @@ class ContributionsActions(ActionBase):
         else:
             return "#00ff00"  # full bright neon green
 
+    # def save_contributions_image(self, cell_map, sorted_weeks, quarter_idx, plugin_path):
+    #     # Image config
+    #     cell_size = 12
+    #     padding = 2
+    #     height = 7 * cell_size + (7 - 1) * padding
+    #     num_weeks = len(sorted_weeks)
+    #     num_cols = max(10, num_weeks)
+    #     img = Image.new("RGB", (num_cols * (cell_size + padding), height), "#d0d0d0") # type: ignore
+    #     draw = ImageDraw.Draw(img)
+    #     for local_w in range(num_cols):
+    #         for d in range(7):
+    #             if local_w < num_weeks:
+    #                 real_w = sorted_weeks[local_w]
+    #                 key = (real_w, d)
+    #                 if key in cell_map:
+    #                     _, count = cell_map[key]
+    #                     color = self.get_color(count)
+    #                 else:
+    #                     color = "white"
+    #             else:
+    #                 color = "white"
+    #             x = local_w * (cell_size + padding)
+    #             y = d * (cell_size + padding)
+    #             #draw.rectangle([x, y, x + cell_size, y + cell_size], fill=color)
+
+    #             # Outer box (including padding space)
+    #             box = [x, y, x + cell_size - 1, y + cell_size - 1]
+
+    #             # Always paint the full padded area white first (to hide gray padding for white cells)
+    #             if color.lower() == "white":
+    #                 draw.rectangle([x, y, x + cell_size, y + cell_size], fill="white")
+
+    #             # Draw the colored cell on top
+    #             draw.rectangle(box, fill=color)
+
+    #             # Only add border to active (green) cells
+    #             if color.lower() not in ["#3d444d", "white"]:
+    #                 draw.rectangle(box, outline="black", width=1)
+
     def save_contributions_image(self, cell_map, sorted_weeks, quarter_idx, plugin_path):
-        # Image config
         cell_size = 12
-        padding = 2
+        padding = 0  # ← Set padding to 0 to remove spacing
         height = 7 * cell_size + (7 - 1) * padding
         num_weeks = len(sorted_weeks)
         num_cols = max(10, num_weeks)
-        img = Image.new("RGB", (num_cols * (cell_size + padding), height), "#d0d0d0") # type: ignore
+
+        # Make background fully white
+        img = Image.new("RGB", (num_cols * (cell_size + padding), height), "white")
         draw = ImageDraw.Draw(img)
+
         for local_w in range(num_cols):
             for d in range(7):
                 if local_w < num_weeks:
@@ -307,24 +348,17 @@ class ContributionsActions(ActionBase):
                         color = "white"
                 else:
                     color = "white"
+
                 x = local_w * (cell_size + padding)
                 y = d * (cell_size + padding)
-                #draw.rectangle([x, y, x + cell_size, y + cell_size], fill=color)
-
-                # Outer box (including padding space)
                 box = [x, y, x + cell_size - 1, y + cell_size - 1]
 
-                # Always paint the full padded area white first (to hide gray padding for white cells)
-                if color.lower() == "white":
-                    draw.rectangle([x, y, x + cell_size, y + cell_size], fill="white")
-
-                # Draw the colored cell on top
+                # Fill the cell (white or colored)
                 draw.rectangle(box, fill=color)
 
-                # Only add border to active (green) cells
+                # Only draw border if it's an active (green) cell
                 if color.lower() not in ["#3d444d", "white"]:
                     draw.rectangle(box, outline="black", width=1)
-
 
         img_path = os.path.join(plugin_path, f"contributions_img{quarter_idx+1}.png")
         img.save(img_path)
