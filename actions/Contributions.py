@@ -97,7 +97,7 @@ class ContributionsActions(ActionBase):
             # fallback to all possible periods if not yet populated
             bimonthly_ranges = self.get_bimonthly_ranges(datetime.now())
             month_labels = [f"{start.strftime('%b')}-{end.strftime('%b')}" for start, end in bimonthly_ranges]
-        display_month_row = ComboRow(
+        self.display_month_row = ComboRow(
             action_core=self,
             var_name="display_contribution_month",
             default_value="",  # No default selected
@@ -123,7 +123,7 @@ class ContributionsActions(ActionBase):
             token_entry,
             user_entry,
             refresh_rate_row.widget,
-            display_month_row.widget,
+            self.display_month_row.widget,
             show_top_label_row,
             show_bottom_label_row,
         ]
@@ -146,8 +146,8 @@ class ContributionsActions(ActionBase):
             self._token_change_timeout_id = None
             return False  # Only run once
 
-        # Debounce: schedule after 300ms
-        self._token_change_timeout_id = GLib.timeout_add(300, do_update)
+        # Debounce: schedule after 500ms
+        self._token_change_timeout_id = GLib.timeout_add(500, do_update)
 
     def on_user_changed(self, entry, *args):
         from gi.repository import GLib
@@ -167,8 +167,8 @@ class ContributionsActions(ActionBase):
             self._user_change_timeout_id = None
             return False  # Only run once
 
-        # Debounce: schedule after 300ms
-        self._user_change_timeout_id = GLib.timeout_add(300, do_update)
+        # Debounce: schedule after 500ms
+        self._user_change_timeout_id = GLib.timeout_add(500, do_update)
 
     def on_refresh_rate_changed(self, widget, value, old):
         settings = self.get_settings()
@@ -440,6 +440,9 @@ class ContributionsActions(ActionBase):
                             self.set_media(media_path=bimonthly_images[i], size=0.49)
                         else:
                             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
+                        # Sync ComboRow dropdown to this period if possible
+                        if hasattr(self, "display_month_row") and self.display_month_row is not None:
+                            self.display_month_row.set_value(label)
                         break
                 else:
                     self.clear_labels("error")
