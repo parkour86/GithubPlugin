@@ -360,34 +360,11 @@ class ContributionsActions(ActionBase):
                 # Only draw border if it's an active (green) cell
                 # if color.lower() not in ["#3d444d", "white"]:
                 #     draw.rectangle(box, outline="black", width=1)
-
-                if color.lower() not in ["#3d444d", "white"]:
-                    # Check adjacent cells
-                    left_key  = (real_w - 1, d)
-                    top_key   = (real_w, d - 1)
-
-                    left_color = self.get_color(cell_map[left_key][1]) if left_key in cell_map else None
-                    top_color = self.get_color(cell_map[top_key][1]) if top_key in cell_map else None
-
-                    # Normalize for comparison
-                    def is_green(c):
-                        return c and c.lower() not in ["#3d444d", "white"]
-
-                    # Always draw right and bottom
-                    draw.line([(x + cell_size - 1, y), (x + cell_size - 1, y + cell_size - 1)], fill="black")  # right
-                    draw.line([(x, y + cell_size - 1), (x + cell_size - 1, y + cell_size - 1)], fill="black")  # bottom
-
-                    # Only draw left if no green cell to the left
-                    if not is_green(left_color):
-                        draw.line([(x, y), (x, y + cell_size - 1)], fill="black")  # left
-
-                    # Only draw top if no green cell above
-                    if not is_green(top_color):
-                        draw.line([(x, y), (x + cell_size - 1, y)], fill="black")  # top
+                #
 
                 # Draw border if it's an active (green) cell
-                if color.lower() in ["#3d444d"]:
-                    draw.rectangle(box, outline="#777777", width=1)
+                #if color.lower() in ["#3d444d"]:
+                draw.rectangle(box, outline="#777777", width=1)
 
         img_path = os.path.join(plugin_path, f"contributions_img{quarter_idx+1}.png")
         img.save(img_path)
