@@ -312,8 +312,22 @@ class ContributionsActions(ActionBase):
                 draw.rectangle([x, y, x + cell_size, y + cell_size], fill=color)
 
                 # Add black border if it's not the inactive color (#3d444d)
-                # if color.lower() != "#3d444d":
-                #     # Draw the border slightly inside to avoid double-thick lines
+                if color.lower() != "#3d444d":
+                    # Draw only right and bottom borders for each cell to avoid double-thick lines
+                    # For the last row/column, draw all borders
+                    is_last_col = (local_w == num_cols - 1)
+                    is_last_row = (d == 6)
+                    # Right border
+                    if is_last_col:
+                        draw.line([(x, y), (x + cell_size, y)], fill="black", width=1)  # top
+                        draw.line([(x, y), (x, y + cell_size)], fill="black", width=1)  # left
+                        draw.line([(x + cell_size, y), (x + cell_size, y + cell_size)], fill="black", width=1)  # right
+                        draw.line([(x, y + cell_size), (x + cell_size, y + cell_size)], fill="black", width=1)  # bottom
+                    else:
+                        draw.line([(x + cell_size, y), (x + cell_size, y + cell_size)], fill="black", width=1)  # right
+                    # Bottom border
+                    if is_last_row and not is_last_col:
+                        draw.line([(x, y + cell_size), (x + cell_size, y + cell_size)], fill="black", width=1)  # bottom
                 #     draw.rectangle(
                 #         [x + 0.5, y + 0.5, x + cell_size - 0.5, y + cell_size - 0.5],
                 #         outline="black", width=1
