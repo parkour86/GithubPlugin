@@ -438,7 +438,7 @@ class ContributionsActions(ActionBase):
                     show_bottom_label = self.get_settings().get("show_bottom_label", True)
                     if show_bottom_label:
                         # Show only the month range (without count) in the bottom label
-                        self.set_bottom_label(label.split(" (")[0], color=[100, 200, 255], outline_width=2, font_size=18, font_family="cantarell")
+                        self.set_bottom_label(label.split(" (")[0], color=[100, 255, 100], outline_width=2, font_size=18, font_family="cantarell")
                     else:
                         self.set_bottom_label(None)
                     # Show the generated image for this period if available
