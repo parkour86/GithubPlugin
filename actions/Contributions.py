@@ -309,14 +309,17 @@ class ContributionsActions(ActionBase):
                     color = "white"
                 x = local_w * (cell_size + padding)
                 y = d * (cell_size + padding)
-                draw.rectangle([x, y, x + cell_size, y + cell_size], fill=color)
+                #draw.rectangle([x, y, x + cell_size, y + cell_size], fill=color)
 
-                # Add border only if it's an active (green) cell
+                # Outer box (including padding space)
+                box = [x, y, x + cell_size - 1, y + cell_size - 1]
+
+                # Draw fill
+                draw.rectangle(box, fill=color)
+
+                # Only add border to active (green) cells
                 if color.lower() not in ["#3d444d", "white"]:
-                    draw.rectangle(
-                        [x, y, x + cell_size - 1, y + cell_size - 1],  # inner border to avoid double-thick edges
-                        outline="black", width=1
-                    )
+                    draw.rectangle(box, outline="black", width=1)
 
 
         img_path = os.path.join(plugin_path, f"contributions_img{quarter_idx+1}.png")
