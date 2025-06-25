@@ -85,8 +85,13 @@ class ContributionsActions(ActionBase):
 
         # ComboRow for Display Contribution Month
         # Only show periods for which images/data exist (populated after fetch)
-        month_labels = getattr(self, "_quarter_labels", None)
-        if not month_labels:
+        month_labels = None
+        if hasattr(self, "_quarter_labels") and hasattr(self, "_quarter_images"):
+            # Only include periods for which an image exists (not None)
+            month_labels = [
+                label for label, img in zip(self._quarter_labels, self._quarter_images) if img is not None
+            ]
+        if not month_labels or len(month_labels) == 0:
             # fallback to all possible periods if not yet populated
             bimonthly_ranges = self.get_bimonthly_ranges(datetime.now())
             month_labels = [f"{start.strftime('%b')}-{end.strftime('%b')}" for start, end in bimonthly_ranges]
@@ -170,9 +175,15 @@ class ContributionsActions(ActionBase):
         # Try to find the corresponding image for the selected label
         # Use cached bimonthly_labels and bimonthly_images if available
         if hasattr(self, "_quarter_labels") and hasattr(self, "_quarter_images"):
-            if selected_label in self._quarter_labels:
-                idx = self._quarter_labels.index(selected_label)
-                img_path = self._quarter_images[idx]
+            # Only consider periods for which an image exists
+            filtered = [
+                (label, img) for label, img in zip(self._quarter_labels, self._quarter_images) if img is not None
+            ]
+            filtered_labels = [label for label, img in filtered]
+            filtered_images = [img for label, img in filtered]
+            if selected_label in filtered_labels:
+                idx = filtered_labels.index(selected_label)
+                img_path = filtered_images[idx]
                 if img_path:
                     self.set_media(media_path=img_path, size=0.49)
 
@@ -197,7 +208,7 @@ class ContributionsActions(ActionBase):
     def get_color(self, count):
         # GitHub-like color scale
         if count == 0:
-            return "#ebedf0"
+            return "#3d444d" # "#ebedf0"
         elif count < 8:
             return "#c6e48b"
         elif count < 15:
