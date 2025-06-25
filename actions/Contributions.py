@@ -204,18 +204,33 @@ class ContributionsActions(ActionBase):
         settings = self.get_settings()
         selected_label = value.get_value() if hasattr(value, "get_value") else value
 
-        if hasattr(self, "_quarter_labels") and hasattr(self, "_quarter_images"):
+        if hasattr(self, "_quarter_labels") and hasattr(self, "_quarter_images") and hasattr(self, "_quarter_counts"):
             filtered = [
-                (label, img) for label, img in zip(self._quarter_labels, self._quarter_images) if img is not None
+                (label, img, count) for label, img, count in zip(self._quarter_labels, self._quarter_images, self._quarter_counts) if img is not None
             ]
-            filtered_labels = [label for label, img in filtered]
-            filtered_images = [img for label, img in filtered]
+            filtered_labels = [label for label, img, count in filtered]
+            filtered_images = [img for label, img, count in filtered]
+            filtered_counts = [count for label, img, count in filtered]
 
             if selected_label in filtered_labels:
                 idx = filtered_labels.index(selected_label)
                 img_path = filtered_images[idx]
+                count = filtered_counts[idx]
                 if img_path:
                     self.set_media(media_path=img_path, size=0.49)
+
+                # ✅ Update the top label (contribution count) for the selected period
+                show_top_label = settings.get("show_top_label", True)
+                if show_top_label:
+                    self.set_top_label(
+                        f"{count}",
+                        color=[100, 255, 100],
+                        outline_width=4,
+                        font_size=18,
+                        font_family="cantarell"
+                    )
+                else:
+                    self.set_top_label(None)
 
                 # ✅ Update the bottom label too
                 show_bottom_label = settings.get("show_bottom_label", True)
@@ -400,6 +415,7 @@ class ContributionsActions(ActionBase):
                 # Cache for ComboRow on_change
                 self._quarter_labels = bimonthly_labels
                 self._quarter_images = bimonthly_images
+                self._quarter_counts = bimonthly_counts
 
                 # Display the most recent bimonthly period with data and image
                 for i in reversed(range(9)):
