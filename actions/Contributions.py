@@ -310,6 +310,11 @@ class ContributionsActions(ActionBase):
                 x = local_w * (cell_size + padding)
                 y = d * (cell_size + padding)
                 draw.rectangle([x, y, x + cell_size, y + cell_size], fill=color)
+
+                # Add black border if it's a green cell
+                if color.lower() != "#3d444d" and color.lower() != "white":
+                    draw.rectangle([x, y, x + cell_size, y + cell_size], outline="black", width=1)
+
         img_path = os.path.join(plugin_path, f"contributions_img{quarter_idx+1}.png")
         img.save(img_path)
         return img_path
