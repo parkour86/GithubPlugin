@@ -84,15 +84,15 @@ class ContributionsActions(ActionBase):
         )
 
         # ComboRow for Display Contribution Month
-        # Use the quarter month labels as options (e.g., 'Jan-Mar', 'Apr-Jun', etc.)
-        quarter_ranges = self.get_quarter_ranges(datetime.now())
-        month_labels = [f"{start.strftime('%b')}-{end.strftime('%b')}" for start, end in quarter_ranges]
+        # Use the bimonthly labels as options (e.g., 'Jan-Feb', 'Mar-Apr', etc.)
+        bimonthly_ranges = self.get_bimonthly_ranges(datetime.now())
+        month_labels = [f"{start.strftime('%b')}-{end.strftime('%b')}" for start, end in bimonthly_ranges]
         display_month_row = ComboRow(
             action_core=self,
             var_name="display_contribution_month",
             default_value="",  # No default selected
             items=month_labels,
-            title="Display Contribution Month",
+            title="Display Contribution Period",
             on_change=self.on_display_month_changed,
             auto_add=False
         )
@@ -161,11 +161,11 @@ class ContributionsActions(ActionBase):
         self.fetch_and_display_contributions()
 
     def on_display_month_changed(self, widget, value, old):
-        # value is the selected label, e.g., "Jul-Sep"
+        # value is the selected label, e.g., "Jul-Aug"
         settings = self.get_settings()
         selected_label = value.get_value() if hasattr(value, "get_value") else value
         # Try to find the corresponding image for the selected label
-        # Use cached quarter_labels and quarter_images if available
+        # Use cached bimonthly_labels and bimonthly_images if available
         if hasattr(self, "_quarter_labels") and hasattr(self, "_quarter_images"):
             if selected_label in self._quarter_labels:
                 idx = self._quarter_labels.index(selected_label)
@@ -174,15 +174,21 @@ class ContributionsActions(ActionBase):
                     self.set_media(media_path=img_path, size=0.49)
 
     @staticmethod
-    def get_quarter_ranges(last_date):
+    def get_bimonthly_ranges(last_date):
         year = last_date.year
         month = last_date.month
         prev_year = year - 1
+        # 9 bimonthly periods: last 3 of prev year, 6 of current year
         return [
-            (datetime(prev_year, 7, 1), datetime(prev_year, 9, 30)),  # Q3 prev year
-            (datetime(prev_year, 10, 1), datetime(prev_year, 12, 31)), # Q4 prev year
-            (datetime(year, 1, 1), datetime(year, 3, 31)),            # Q1 current year
-            (datetime(year, 4, 1), datetime(year, 6, 30))             # Q2 current year
+            (datetime(prev_year, 7, 1), datetime(prev_year, 8, 31)),   # Jul-Aug prev year
+            (datetime(prev_year, 9, 1), datetime(prev_year, 10, 31)),  # Sep-Oct prev year
+            (datetime(prev_year, 11, 1), datetime(prev_year, 12, 31)), # Nov-Dec prev year
+            (datetime(year, 1, 1), datetime(year, 2, 28 if year % 4 != 0 else 29)),   # Jan-Feb current year
+            (datetime(year, 3, 1), datetime(year, 4, 30)),             # Mar-Apr current year
+            (datetime(year, 5, 1), datetime(year, 6, 30)),             # May-Jun current year
+            (datetime(year, 7, 1), datetime(year, 8, 31)),             # Jul-Aug current year
+            (datetime(year, 9, 1), datetime(year, 10, 31)),            # Sep-Oct current year
+            (datetime(year, 11, 1), datetime(year, 12, 31)),           # Nov-Dec current year
         ]
 
     def get_color(self, count):
@@ -205,7 +211,7 @@ class ContributionsActions(ActionBase):
         height = 7 * cell_size + (7 - 1) * padding
         num_weeks = len(sorted_weeks)
         num_cols = max(14, num_weeks)
-        img = Image.new("RGB", (num_cols * (cell_size + padding), height), "white")
+        img = Image.new("RGB", (num_cols * (cell_size + padding), height), "white") # type: ignore
         draw = ImageDraw.Draw(img)
         for local_w in range(num_cols):
             for d in range(7):
@@ -304,14 +310,14 @@ class ContributionsActions(ActionBase):
                 last_day = last_week["contributionDays"][-1]["date"]
                 last_date = datetime.strptime(last_day, "%Y-%m-%d")
 
-                # Use staticmethod for quarter ranges
-                quarter_ranges = self.get_quarter_ranges(last_date)
-                quarter_counts = []
-                quarter_images = []
+                # Use staticmethod for bimonthly ranges
+                bimonthly_ranges = self.get_bimonthly_ranges(last_date)
+                bimonthly_counts = []
+                bimonthly_images = []
                 plugin_path = self.plugin_base.PATH
 
-                quarter_labels = []
-                for idx, (start, end) in enumerate(quarter_ranges):
+                bimonthly_labels = []
+                for idx, (start, end) in enumerate(bimonthly_ranges):
                     count = 0
                     cell_map = {}
                     week_indices = set()
@@ -324,31 +330,30 @@ class ContributionsActions(ActionBase):
                                 cell_map[(week_idx, day_idx)] = (date_str, c)
                                 week_indices.add(week_idx)
                                 count += c
-                    quarter_counts.append(count)
+                    bimonthly_counts.append(count)
                     label = f"{start.strftime('%b')}-{end.strftime('%b')}"
-                    quarter_labels.append(label)
+                    bimonthly_labels.append(label)
                     if week_indices:
                         sorted_weeks = sorted(week_indices)
                         img_path = self.save_contributions_image(cell_map, sorted_weeks, idx, plugin_path)
-                        quarter_images.append(img_path)
+                        bimonthly_images.append(img_path)
                     else:
-                        quarter_images.append(None)
+                        bimonthly_images.append(None)
 
                 # Cache for ComboRow on_change
-                self._quarter_labels = quarter_labels
-                self._quarter_images = quarter_images
+                self._quarter_labels = bimonthly_labels
+                self._quarter_images = bimonthly_images
 
-                # Display the most recent quarter with data and image
-                for i in reversed(range(4)):
-                    if quarter_counts[i] > 0:
-                        qnum = i + 1
-                        start, end = quarter_ranges[i]
-                        label = quarter_labels[i]
+                # Display the most recent bimonthly period with data and image
+                for i in reversed(range(9)):
+                    if bimonthly_counts[i] > 0:
+                        start, end = bimonthly_ranges[i]
+                        label = bimonthly_labels[i]
                         self.clear_labels("success")
                         # Show/hide top label (contribution count)
                         show_top_label = self.get_settings().get("show_top_label", True)
                         if show_top_label:
-                            self.set_top_label(f"{quarter_counts[i]}", color=[100, 255, 100], outline_width=4, font_size=18, font_family="cantarell")
+                            self.set_top_label(f"{bimonthly_counts[i]}", color=[100, 255, 100], outline_width=4, font_size=18, font_family="cantarell")
                         else:
                             self.set_top_label(None)
                         # Show/hide bottom label
@@ -357,9 +362,9 @@ class ContributionsActions(ActionBase):
                             self.set_bottom_label(label, color=[100, 200, 255], outline_width=2, font_size=18, font_family="cantarell")
                         else:
                             self.set_bottom_label(None)
-                        # Show the generated image for this quarter if available
-                        if quarter_images[i]:
-                            self.set_media(media_path=quarter_images[i], size=0.49)
+                        # Show the generated image for this period if available
+                        if bimonthly_images[i]:
+                            self.set_media(media_path=bimonthly_images[i], size=0.49)
                         else:
                             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
                         break
