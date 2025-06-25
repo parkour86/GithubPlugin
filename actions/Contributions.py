@@ -35,7 +35,7 @@ class ContributionsActions(ActionBase):
         github_token = settings.get("github_token", "")
         github_user = settings.get("github_user", "")
         if github_token and github_user:
-            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
+            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
             self.fetch_and_display_contributions()
         else:
             self.clear_labels("error")
@@ -445,7 +445,7 @@ class ContributionsActions(ActionBase):
                     if img_path:
                         self.set_media(media_path=img_path, size=0.68, valign="-.07")
                     else:
-                        self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
+                        self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
                     return
                 else:
                     self.clear_labels("error")
