@@ -26,6 +26,8 @@ class ContributionsActions(ActionBase):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._token_change_timeout_id = None
+        self._user_change_timeout_id = None
         self._refresh_timer_id = None  # For periodic refresh
 
     def on_ready(self) -> None:
@@ -127,16 +129,46 @@ class ContributionsActions(ActionBase):
         ]
 
     def on_token_changed(self, entry, *args):
-        settings = self.get_settings()
-        settings["github_token"] = entry.get_text()
-        self.set_settings(settings)
-        self.fetch_and_display_contributions()
+        from gi.repository import GLib
+        # Cancel any pending timeout
+        if self._token_change_timeout_id is not None:
+            try:
+                GLib.source_remove(self._token_change_timeout_id)
+            except Exception:
+                pass
+            self._token_change_timeout_id = None
+
+        def do_update():
+            settings = self.get_settings()
+            settings["github_token"] = entry.get_text()
+            self.set_settings(settings)
+            self.fetch_and_display_contributions()
+            self._token_change_timeout_id = None
+            return False  # Only run once
+
+        # Debounce: schedule after 300ms
+        self._token_change_timeout_id = GLib.timeout_add(300, do_update)
 
     def on_user_changed(self, entry, *args):
-        settings = self.get_settings()
-        settings["github_user"] = entry.get_text()
-        self.set_settings(settings)
-        self.fetch_and_display_contributions()
+        from gi.repository import GLib
+        # Cancel any pending timeout
+        if self._user_change_timeout_id is not None:
+            try:
+                GLib.source_remove(self._user_change_timeout_id)
+            except Exception:
+                pass
+            self._user_change_timeout_id = None
+
+        def do_update():
+            settings = self.get_settings()
+            settings["github_user"] = entry.get_text()
+            self.set_settings(settings)
+            self.fetch_and_display_contributions()
+            self._user_change_timeout_id = None
+            return False  # Only run once
+
+        # Debounce: schedule after 300ms
+        self._user_change_timeout_id = GLib.timeout_add(300, do_update)
 
     def on_refresh_rate_changed(self, widget, value, old):
         settings = self.get_settings()
@@ -384,7 +416,7 @@ class ContributionsActions(ActionBase):
                         break
                 else:
                     self.clear_labels("error")
-                    self.set_top_label("\nNo\nContributions", **kwargs)
+                    self.set_top_label("\nActivity\nLog\nEmpty", **kwargs)
                     self.set_media(media_path=default_media, size=0.9)
                     self.set_background_color(color=[255, 255, 255, 255], update=True)
 
