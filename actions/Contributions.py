@@ -495,12 +495,27 @@ class ContributionsActions(ActionBase):
                         current_selected = self.display_month_row.get_value() if hasattr(self.display_month_row, "get_value") else None
                         # Only repopulate if the labels have changed
                         current_items = getattr(self.display_month_row, "items", None)
+                        def label_month_part(label):
+                            return label.split(" (")[0] if label else ""
+                        # Try to match by month part only
+                        selected_label = None
                         if current_items is None or list(current_items) != list(bimonthly_labels):
-                            # If current selection is still valid, keep it; otherwise, use the first with data
-                            selected_label = current_selected if current_selected in bimonthly_labels else label
+                            if current_selected:
+                                for lbl in bimonthly_labels:
+                                    if label_month_part(lbl) == label_month_part(current_selected):
+                                        selected_label = lbl
+                                        break
+                            if not selected_label:
+                                selected_label = label
                             self.display_month_row.populate(bimonthly_labels, selected_item=selected_label, update_settings=True, trigger_callback=False)
                         else:
-                            selected_label = current_selected if current_selected in bimonthly_labels else label
+                            if current_selected:
+                                for lbl in bimonthly_labels:
+                                    if label_month_part(lbl) == label_month_part(current_selected):
+                                        selected_label = lbl
+                                        break
+                            if not selected_label:
+                                selected_label = label
                     else:
                         selected_label = label
 
