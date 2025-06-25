@@ -361,19 +361,9 @@ class ContributionsActions(ActionBase):
                 # if color.lower() not in ["#3d444d", "white"]:
                 #     draw.rectangle(box, outline="black", width=1)
 
-                if color.lower() not in ["#3d444d", "white"]:
-                    x0, y0, x1, y1 = box
-                    border_thickness = 4
-                    # Draw outer black rectangle
-                    draw.rectangle([x0 - border_thickness, y0 - border_thickness, x1 + border_thickness - 1, y1 + border_thickness - 1], fill="black")
-                    # Draw inner cell rectangle
-                    draw.rectangle([x0, y0, x1 - 1, y1 - 1], fill=color)
-
-
-
                 # Draw border if it's an active (green) cell
-                if color.lower() in ["#3d444d"]:
-                    draw.rectangle(box, outline="#777777", width=1)
+                #if color.lower() in ["#3d444d"]:
+                draw.rectangle(box, outline="#777777", width=1)
 
         img_path = os.path.join(plugin_path, f"contributions_img{quarter_idx+1}.png")
         img.save(img_path)
