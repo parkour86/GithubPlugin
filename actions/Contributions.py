@@ -88,17 +88,9 @@ class ContributionsActions(ActionBase):
         )
 
         # ComboRow for Display Contribution Month
-        # Only show periods for which images/data exist (populated after fetch)
-        month_labels = None
-        if hasattr(self, "_quarter_labels") and hasattr(self, "_quarter_images"):
-            # Only include periods for which an image exists (not None)
-            month_labels = [
-                label for label, img in zip(self._quarter_labels, self._quarter_images) if img is not None
-            ]
-        if not month_labels or len(month_labels) == 0:
-            # fallback to all possible periods if not yet populated
-            bimonthly_ranges = self.get_bimonthly_ranges(datetime.now())
-            month_labels = [f"{start.strftime('%b')}-{end.strftime('%b')}" for start, end in bimonthly_ranges]
+        # Always show all possible periods in the dropdown
+        bimonthly_ranges = self.get_bimonthly_ranges(datetime.now())
+        month_labels = [f"{start.strftime('%b')}-{end.strftime('%b')}" for start, end in bimonthly_ranges]
         display_month_row = ComboRow(
             action_core=self,
             var_name="display_contribution_month",
@@ -206,18 +198,11 @@ class ContributionsActions(ActionBase):
         # value is the selected label, e.g., "Jul-Aug"
         settings = self.get_settings()
         selected_label = value.get_value() if hasattr(value, "get_value") else value
-        # Try to find the corresponding image for the selected label
-        # Use cached bimonthly_labels and bimonthly_images if available
+        # Use the full label list to map to images and labels
         if hasattr(self, "_quarter_labels") and hasattr(self, "_quarter_images"):
-            # Only consider periods for which an image exists
-            filtered = [
-                (label, img) for label, img in zip(self._quarter_labels, self._quarter_images) if img is not None
-            ]
-            filtered_labels = [label for label, img in filtered]
-            filtered_images = [img for label, img in filtered]
-            if selected_label in filtered_labels:
-                idx = filtered_labels.index(selected_label)
-                img_path = filtered_images[idx]
+            if selected_label in self._quarter_labels:
+                idx = self._quarter_labels.index(selected_label)
+                img_path = self._quarter_images[idx]
                 if img_path:
                     self.set_media(media_path=img_path, size=0.49)
 
