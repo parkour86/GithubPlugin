@@ -201,23 +201,34 @@ class ContributionsActions(ActionBase):
         self.fetch_and_display_contributions()
 
     def on_display_month_changed(self, widget, value, old):
-        # value is the selected label, e.g., "Jul-Aug"
         settings = self.get_settings()
         selected_label = value.get_value() if hasattr(value, "get_value") else value
-        # Try to find the corresponding image for the selected label
-        # Use cached bimonthly_labels and bimonthly_images if available
+
         if hasattr(self, "_quarter_labels") and hasattr(self, "_quarter_images"):
-            # Only consider periods for which an image exists
             filtered = [
                 (label, img) for label, img in zip(self._quarter_labels, self._quarter_images) if img is not None
             ]
             filtered_labels = [label for label, img in filtered]
             filtered_images = [img for label, img in filtered]
+
             if selected_label in filtered_labels:
                 idx = filtered_labels.index(selected_label)
                 img_path = filtered_images[idx]
                 if img_path:
                     self.set_media(media_path=img_path, size=0.49)
+
+                # ✅ Update the bottom label too
+                show_bottom_label = settings.get("show_bottom_label", True)
+                if show_bottom_label:
+                    self.set_bottom_label(
+                        selected_label,
+                        color=[100, 200, 255],
+                        outline_width=2,
+                        font_size=18,
+                        font_family="cantarell"
+                    )
+                else:
+                    self.set_bottom_label(None)
 
     @staticmethod
     def get_bimonthly_ranges(last_date):
