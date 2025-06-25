@@ -362,12 +362,16 @@ class ContributionsActions(ActionBase):
                 #     draw.rectangle(box, outline="black", width=1)
 
                 if color.lower() not in ["#3d444d", "white"]:
-                    # Original box coordinates
                     x0, y0, x1, y1 = box
-                    # Draw thicker border by drawing outlines expanding outward
-                    for offset in range(4):  # 4 pixels thick border
-                        expanded_box = [x0 - offset, y0 - offset, x1 + offset, y1 + offset]
-                        draw.rectangle(expanded_box, outline="black")
+                    border_thickness = 4
+                    # Draw black rectangle bigger by border_thickness on all sides
+                    black_box = [x0 - border_thickness, y0 - border_thickness, x1 + border_thickness, y1 + border_thickness]
+                    draw.rectangle(black_box, fill="black")
+                    # Draw the colored cell inside, smaller by border_thickness
+                    inner_box = [x0, y0, x1, y1]
+                    draw.rectangle(inner_box, fill=color)
+                else:
+                    draw.rectangle(box, fill=color)
 
                 # Draw border if it's an active (green) cell
                 #if color.lower() in ["#3d444d"]:
