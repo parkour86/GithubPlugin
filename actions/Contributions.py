@@ -323,7 +323,7 @@ class ContributionsActions(ActionBase):
 
                 # Add border to inactive (white) cells
                 if color.lower() in ["white"]:
-                    draw.rectangle(box, outline="#d0d0d0", width=1)
+                    draw.rectangle(box, outline="#d0d0d0", width=3)
 
 
         img_path = os.path.join(plugin_path, f"contributions_img{quarter_idx+1}.png")
