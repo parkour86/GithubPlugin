@@ -245,7 +245,7 @@ class ContributionsActions(ActionBase):
                         selected_label.split(" (")[0],
                         color=[100, 255, 100],
                         outline_width=2,
-                        font_size=18,
+                        font_size=16,
                         font_family="cantarell"
                     )
                 else:
@@ -330,7 +330,8 @@ class ContributionsActions(ActionBase):
         padding = 0  # ← Set padding to 0 to remove spacing
         height = 7 * cell_size + (7 - 1) * padding
         num_weeks = len(sorted_weeks)
-        num_cols = max(10, num_weeks)
+        #num_cols = max(10, num_weeks)
+        num_cols = num_weeks
 
         # Make background fully white
         img = Image.new("RGB", (num_cols * (cell_size + padding), height), "white")
@@ -523,7 +524,7 @@ class ContributionsActions(ActionBase):
                     show_bottom_label = self.get_settings().get("show_bottom_label", True)
                     if show_bottom_label:
                         # Show only the month range (without count) in the bottom label
-                        self.set_bottom_label(selected_label.split(" (")[0], color=[100, 255, 100], outline_width=2, font_size=18, font_family="cantarell")
+                        self.set_bottom_label(selected_label.split(" (")[0], color=[100, 255, 100], outline_width=2, font_size=16, font_family="cantarell")
                     else:
                         self.set_bottom_label(None)
                     # Show the generated image for this period if available
