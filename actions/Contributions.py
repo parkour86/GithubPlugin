@@ -357,7 +357,6 @@ class ContributionsActions(ActionBase):
                 # Fill the cell (white or colored)
                 draw.rectangle(box, fill=color)
 
-
                 # Only draw border if it's an active (green) cell
                 # if color.lower() not in ["#3d444d", "white"]:
                 #     draw.rectangle(box, outline="black", width=1)
@@ -589,7 +588,9 @@ class ContributionsActions(ActionBase):
             return True  # Continue timer
 
         try:
-            self._refresh_timer_id = GLib.timeout_add_seconds(refresh_rate * 3600, _timer_callback)
+            #self._refresh_timer_id = GLib.timeout_add_seconds(refresh_rate * 3600, _timer_callback)
+            self._refresh_timer_id = GLib.timeout_add_seconds(refresh_rate * 60, _timer_callback)
+
         except Exception:
             self._refresh_timer_id = None
 
