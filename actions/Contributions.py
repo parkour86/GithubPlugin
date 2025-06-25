@@ -362,15 +362,15 @@ class ContributionsActions(ActionBase):
                 #     draw.rectangle(box, outline="black", width=1)
 
                 if color.lower() not in ["#3d444d", "white"]:
-                    border = 2  # Adjust thickness as needed
                     x0, y0, x1, y1 = box
-                    # Draw the black border behind (larger rectangle)
-                    draw.rectangle(
-                        [x0 - border, y0 - border, x1 + border, y1 + border],
-                        fill="black"
-                    )
-                # Draw the colored cell normally (on top)
-                draw.rectangle(box, fill=color)
+                    for offset in range(4):  # 4 pixels thick border
+                        # Subtract 1 from x0/y0 and add 1 to x1/y1 to include the right and bottom edges
+                        expanded_box = [
+                            x0 - offset, y0 - offset,
+                            x1 + offset - 1, y1 + offset - 1
+                        ]
+                        draw.rectangle(expanded_box, outline="black")
+
 
                 # Draw border if it's an active (green) cell
                 #if color.lower() in ["#3d444d"]:
