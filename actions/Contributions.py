@@ -171,7 +171,7 @@ class ContributionsActions(ActionBase):
                 idx = self._quarter_labels.index(selected_label)
                 img_path = self._quarter_images[idx]
                 if img_path:
-                    self.set_media(media_path=img_path, size=0.9)
+                    self.set_media(media_path=img_path, size=0.49)
 
     @staticmethod
     def get_quarter_ranges(last_date):
@@ -345,7 +345,6 @@ class ContributionsActions(ActionBase):
                         start, end = quarter_ranges[i]
                         label = quarter_labels[i]
                         self.clear_labels("success")
-                        self.set_center_label(label, color=[100, 200, 255], outline_width=2, font_size=18, font_family="cantarell")
                         # Show/hide top label (contribution count)
                         show_top_label = self.get_settings().get("show_top_label", True)
                         if show_top_label:
@@ -360,7 +359,7 @@ class ContributionsActions(ActionBase):
                             self.set_bottom_label(None)
                         # Show the generated image for this quarter if available
                         if quarter_images[i]:
-                            self.set_media(media_path=quarter_images[i], size=0.9)
+                            self.set_media(media_path=quarter_images[i], size=0.49)
                         else:
                             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
                         break
