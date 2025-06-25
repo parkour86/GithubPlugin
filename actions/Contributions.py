@@ -314,16 +314,16 @@ class ContributionsActions(ActionBase):
                 # Outer box (including padding space)
                 box = [x, y, x + cell_size - 1, y + cell_size - 1]
 
-                # Draw fill
+                # Always paint the full padded area white first (to hide gray padding for white cells)
+                if color.lower() == "white":
+                    draw.rectangle([x, y, x + cell_size, y + cell_size], fill="white")
+
+                # Draw the colored cell on top
                 draw.rectangle(box, fill=color)
 
                 # Only add border to active (green) cells
                 if color.lower() not in ["#3d444d", "white"]:
                     draw.rectangle(box, outline="black", width=1)
-
-                # Add border to inactive (white) cells
-                if color.lower() in ["white"]:
-                    draw.rectangle(box, outline="white", width=3)
 
 
         img_path = os.path.join(plugin_path, f"contributions_img{quarter_idx+1}.png")
