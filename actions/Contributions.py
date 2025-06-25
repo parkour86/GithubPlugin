@@ -309,29 +309,21 @@ class ContributionsActions(ActionBase):
                     color = "white"
                 x = local_w * (cell_size + padding)
                 y = d * (cell_size + padding)
-                draw.rectangle([x, y, x + cell_size, y + cell_size], fill=color)
+                #draw.rectangle([x, y, x + cell_size, y + cell_size], fill=color)
+                inset = 1  # reduce size by 1px on all sides
+                draw.rectangle(
+                    [x + inset, y + inset, x + cell_size - inset, y + cell_size - inset],
+                    outline="black", width=1
+                )
 
-                # Add black border if it's not the inactive color (#3d444d)
-                if color.lower() != "#3d444d":
-                    # Draw only right and bottom borders for each cell to avoid double-thick lines
-                    # For the last row/column, draw all borders
-                    is_last_col = (local_w == num_cols - 1)
-                    is_last_row = (d == 6)
-                    # Right border
-                    if is_last_col:
-                        draw.line([(x, y), (x + cell_size, y)], fill="black", width=1)  # top
-                        draw.line([(x, y), (x, y + cell_size)], fill="black", width=1)  # left
-                        draw.line([(x + cell_size, y), (x + cell_size, y + cell_size)], fill="black", width=1)  # right
-                        draw.line([(x, y + cell_size), (x + cell_size, y + cell_size)], fill="black", width=1)  # bottom
-                    else:
-                        draw.line([(x + cell_size, y), (x + cell_size, y + cell_size)], fill="black", width=1)  # right
-                    # Bottom border
-                    if is_last_row and not is_last_col:
-                        draw.line([(x, y + cell_size), (x + cell_size, y + cell_size)], fill="black", width=1)  # bottom
-                #     draw.rectangle(
-                #         [x + 0.5, y + 0.5, x + cell_size - 0.5, y + cell_size - 0.5],
-                #         outline="black", width=1
-                #     )
+                # Add black border if it's a green cell
+                if color.lower() != "#3d444d" and color.lower() != "white":
+                    inset = 1
+                    draw.rectangle(
+                        [x + inset, y + inset, x + cell_size - inset, y + cell_size - inset],
+                        outline="black", width=1
+                    )
+
 
         img_path = os.path.join(plugin_path, f"contributions_img{quarter_idx+1}.png")
         img.save(img_path)
