@@ -262,18 +262,29 @@ class ContributionsActions(ActionBase):
             current_end = current_start - relativedelta(days=1)
         return ranges
 
+    # def get_color(self, count):
+    #     # GitHub-like color scale
+    #     if count == 0:
+    #         return "#3d444d" # "#ebedf0"
+    #     elif count < 8:
+    #         return "#c6e48b"
+    #     elif count < 15:
+    #         return "#7bc96f"
+    #     elif count < 22:
+    #         return "#239a3b"
+    #     else:
+    #         return "#196127"
     def get_color(self, count):
-        # GitHub-like color scale
         if count == 0:
-            return "#3d444d" # "#ebedf0"
+            return "#3d444d"  # dark gray (inactive)
         elif count < 8:
-            return "#c6e48b"
+            return "#b6ff91"  # pastel green
         elif count < 15:
-            return "#7bc96f"
+            return "#6fff57"  # lime green
         elif count < 22:
-            return "#239a3b"
+            return "#2dff2d"  # bright green
         else:
-            return "#196127"
+            return "#00ff00"  # full bright neon green
 
     def save_contributions_image(self, cell_map, sorted_weeks, quarter_idx, plugin_path):
         # Image config
