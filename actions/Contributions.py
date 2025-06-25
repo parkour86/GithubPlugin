@@ -318,7 +318,7 @@ class ContributionsActions(ActionBase):
                 draw.rectangle(box, fill=color)
 
                 # Only add border to active (green) cells
-                if color.lower() not in ["#3d444d", "white"]:
+                if color.lower() not in ["white"]:
                     draw.rectangle(box, outline="black", width=1)
 
 
