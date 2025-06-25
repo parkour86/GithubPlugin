@@ -360,6 +360,9 @@ class ContributionsActions(ActionBase):
                 if color.lower() not in ["#3d444d", "white"]:
                     draw.rectangle(box, outline="black", width=1)
 
+                if color.lower() in ["white"]:
+                    draw.rectangle(box, outline="white", width=1)
+
         img_path = os.path.join(plugin_path, f"contributions_img{quarter_idx+1}.png")
         img.save(img_path)
         return img_path
