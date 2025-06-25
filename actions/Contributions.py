@@ -304,9 +304,9 @@ class ContributionsActions(ActionBase):
                         _, count = cell_map[key]
                         color = self.get_color(count)
                     else:
-                        color = "#d0d0d0"
+                        color = "white"
                 else:
-                    color = "#d0d0d0"
+                    color = "white"
                 x = local_w * (cell_size + padding)
                 y = d * (cell_size + padding)
                 #draw.rectangle([x, y, x + cell_size, y + cell_size], fill=color)
@@ -320,6 +320,10 @@ class ContributionsActions(ActionBase):
                 # Only add border to active (green) cells
                 if color.lower() not in ["#3d444d", "white"]:
                     draw.rectangle(box, outline="black", width=1)
+
+                # Add border to inactive (white) cells
+                if color.lower() in ["white"]:
+                    draw.rectangle(box, outline="#d0d0d0", width=1)
 
 
         img_path = os.path.join(plugin_path, f"contributions_img{quarter_idx+1}.png")
