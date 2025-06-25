@@ -142,7 +142,9 @@ class ContributionsActions(ActionBase):
             settings = self.get_settings()
             settings["github_token"] = entry.get_text()
             self.set_settings(settings)
-            self.fetch_and_display_contributions()
+            github_user = settings.get("github_user", "")
+            if github_user.strip():
+                self.fetch_and_display_contributions()
             self._token_change_timeout_id = None
             return False  # Only run once
 
@@ -163,7 +165,9 @@ class ContributionsActions(ActionBase):
             settings = self.get_settings()
             settings["github_user"] = entry.get_text()
             self.set_settings(settings)
-            self.fetch_and_display_contributions()
+            github_token = settings.get("github_token", "")
+            if github_token.strip():
+                self.fetch_and_display_contributions()
             self._user_change_timeout_id = None
             return False  # Only run once
 
