@@ -416,35 +416,35 @@ class ContributionsActions(ActionBase):
                 self._quarter_images = bimonthly_images
                 self._quarter_counts = bimonthly_counts
 
-                # Display the most recent bimonthly period with data and image
-                for i in reversed(range(9)):
-                    if bimonthly_counts[i] > 0:
-                        start, end = bimonthly_ranges[i]
-                        label = bimonthly_labels[i]
-                        self.clear_labels("success")
-                        # Show/hide top label (contribution count)
-                        show_top_label = self.get_settings().get("show_top_label", True)
-                        if show_top_label:
-                            self.set_top_label(f"{bimonthly_counts[i]}", color=[100, 255, 100], outline_width=4, font_size=18, font_family="cantarell")
-                        else:
-                            self.set_top_label(None)
-                        # Show/hide bottom label
-                        show_bottom_label = self.get_settings().get("show_bottom_label", True)
-                        if show_bottom_label:
-                            self.set_bottom_label(label, color=[100, 200, 255], outline_width=2, font_size=18, font_family="cantarell")
-                        else:
-                            self.set_bottom_label(None)
-                        # Show the generated image for this period if available
-                        if bimonthly_images[i]:
-                            self.set_media(media_path=bimonthly_images[i], size=0.49)
-                        else:
-                            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
-                        # Sync ComboRow dropdown to this period if possible
-                        if hasattr(self, "display_month_row") and self.display_month_row is not None:
-                            # Repopulate ComboRow items with new bimonthly_labels before setting value
-                            self.display_month_row.populate(bimonthly_labels, selected_item=label, update_settings=True, trigger_callback=True)
-                            return
-                        break
+                # Display the first bimonthly period with data and image (by default)
+                first_with_data = next(
+                    ((lbl, img, cnt) for lbl, img, cnt in zip(bimonthly_labels, bimonthly_images, bimonthly_counts) if cnt > 0),
+                    (None, None, None)
+                )
+                if first_with_data[0] is not None:
+                    label, img_path, count = first_with_data
+                    self.clear_labels("success")
+                    # Repopulate ComboRow items with new bimonthly_labels before setting value
+                    if hasattr(self, "display_month_row") and self.display_month_row is not None:
+                        self.display_month_row.populate(bimonthly_labels, selected_item=label, update_settings=True, trigger_callback=True)
+                    # Show/hide top label (contribution count)
+                    show_top_label = self.get_settings().get("show_top_label", True)
+                    if show_top_label:
+                        self.set_top_label(f"{count}", color=[100, 255, 100], outline_width=4, font_size=18, font_family="cantarell")
+                    else:
+                        self.set_top_label(None)
+                    # Show/hide bottom label
+                    show_bottom_label = self.get_settings().get("show_bottom_label", True)
+                    if show_bottom_label:
+                        self.set_bottom_label(label, color=[100, 200, 255], outline_width=2, font_size=18, font_family="cantarell")
+                    else:
+                        self.set_bottom_label(None)
+                    # Show the generated image for this period if available
+                    if img_path:
+                        self.set_media(media_path=img_path, size=0.49)
+                    else:
+                        self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
+                    return
                 else:
                     self.clear_labels("error")
                     self.set_top_label("\nActivity\nLog\nEmpty", **kwargs)
