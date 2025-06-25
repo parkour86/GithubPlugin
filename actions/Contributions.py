@@ -304,171 +304,10 @@ class ContributionsActions(ActionBase):
         img.save(img_path)
         return img_path
 
-    # def fetch_and_display_contributions(self):
-    #     # Common red label parameters
-    #     red = [255, 100, 100]
-    #     kwargs = {"color": red, "outline_width": 1, "font_size": 17, "font_family": "cantarell"}
-    #     default_media = os.path.join(self.plugin_base.PATH, "assets", "info.png")
-
-    #     try:
-    #         settings = self.get_settings()
-    #         github_token = settings.get("github_token", "")
-    #         github_user = settings.get("github_user", "")
-    #         log.info(f"[DEBUG] Fetching contributions for {github_user}")
-
-    #         if not github_token or not github_user:
-    #             self.clear_labels("error")
-    #             self.set_background_color(color=[255, 255, 255, 255], update=True)
-    #             self.set_top_label("\nConfigure\nContributions\nPlugin", **kwargs)
-    #             self.set_media(media_path=default_media, size=0.9)
-    #             return
-
-    #         query = """
-    #         query($login: String!) {
-    #         user(login: $login) {
-    #             contributionsCollection {
-    #             contributionCalendar {
-    #                 weeks {
-    #                 contributionDays {
-    #                     contributionCount
-    #                     date
-    #                 }
-    #                 }
-    #             }
-    #             }
-    #         }
-    #         }
-    #         """
-
-    #         headers = {
-    #             "Authorization": f"Bearer {github_token}"
-    #         }
-
-    #         try:
-    #             response = requests.post(
-    #                 "https://api.github.com/graphql",
-    #                 json={"query": query, "variables": {"login": github_user}},
-    #                 headers=headers,
-    #                 timeout=15
-    #             )
-    #             status = response.status_code
-
-    #             if status != 200:
-    #                 self.clear_labels("error")
-    #                 label = "\nInvalid\nToken" if status == 401 else "\nAPI\nError"
-    #                 self.set_top_label(label, **kwargs)
-    #                 self.set_media(media_path=default_media, size=0.9)
-    #                 self.set_background_color(color=[255, 255, 255, 255], update=True)
-    #                 return
-
-    #             data = response.json()
-    #             if "data" not in data or data["data"]["user"] is None:
-    #                 self.clear_labels("error")
-    #                 self.set_top_label("\nUser\nNot Found", **kwargs)
-    #                 self.set_media(media_path=default_media, size=0.9)
-    #                 self.set_background_color(color=[255, 255, 255, 255], update=True)
-    #                 return
-
-    #             weeks_data = data["data"]["user"]["contributionsCollection"]["contributionCalendar"]["weeks"]
-    #             if not weeks_data:
-    #                 self.clear_labels("error")
-    #                 self.set_top_label("\nNo\nData", **kwargs)
-    #                 self.set_media(media_path=default_media, size=0.9)
-    #                 self.set_background_color(color=[255, 255, 255, 255], update=True)
-    #                 return
-
-    #             # Find the last date in the dataset (last day of last week)
-    #             last_week = weeks_data[-1]
-    #             last_day = last_week["contributionDays"][-1]["date"]
-    #             last_date = datetime.strptime(last_day, "%Y-%m-%d")
-
-    #             # Use staticmethod for bimonthly ranges
-    #             bimonthly_ranges = self.get_bimonthly_ranges(last_date)
-    #             bimonthly_counts = []
-    #             bimonthly_images = []
-    #             plugin_path = self.plugin_base.PATH
-
-    #             bimonthly_labels = []
-    #             for idx, (start, end) in enumerate(bimonthly_ranges):
-    #                 count = 0
-    #                 cell_map = {}
-    #                 week_indices = set()
-    #                 for week_idx, week in enumerate(weeks_data):
-    #                     for day_idx, day in enumerate(week["contributionDays"]):
-    #                         date_str = day["date"]
-    #                         c = day["contributionCount"]
-    #                         date_obj = datetime.strptime(date_str, "%Y-%m-%d")
-    #                         if start <= date_obj <= end:
-    #                             cell_map[(week_idx, day_idx)] = (date_str, c)
-    #                             week_indices.add(week_idx)
-    #                             count += c
-    #                 bimonthly_counts.append(count)
-    #                 label = f"{start.strftime('%b')}-{end.strftime('%b')}"
-    #                 bimonthly_labels.append(label)
-    #                 if week_indices:
-    #                     img_path = self.save_contributions_image(cell_map, sorted(week_indices), idx, plugin_path)
-    #                     bimonthly_images.append(img_path)
-    #                 else:
-    #                     bimonthly_images.append(None)
-
-    #             # Cache for ComboRow on_change
-    #             self._quarter_labels = bimonthly_labels
-    #             self._quarter_images = bimonthly_images
-    #             self._quarter_counts = bimonthly_counts
-
-    #             # Display the most recent bimonthly period with data and image
-    #             for i in reversed(range(9)):
-    #                 if bimonthly_counts[i] > 0:
-    #                     start, end = bimonthly_ranges[i]
-    #                     label = bimonthly_labels[i]
-    #                     self.clear_labels("success")
-    #                     # Show/hide top label (contribution count)
-    #                     show_top_label = self.get_settings().get("show_top_label", True)
-    #                     if show_top_label:
-    #                         self.set_top_label(f"{bimonthly_counts[i]}", color=[100, 255, 100], outline_width=4, font_size=18, font_family="cantarell")
-    #                     else:
-    #                         self.set_top_label(None)
-    #                     # Show/hide bottom label
-    #                     show_bottom_label = self.get_settings().get("show_bottom_label", True)
-    #                     if show_bottom_label:
-    #                         self.set_bottom_label(label, color=[100, 200, 255], outline_width=2, font_size=18, font_family="cantarell")
-    #                     else:
-    #                         self.set_bottom_label(None)
-    #                     # Show the generated image for this period if available
-    #                     if bimonthly_images[i]:
-    #                         self.set_media(media_path=bimonthly_images[i], size=0.49)
-    #                     else:
-    #                         self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
-    #                     # Sync ComboRow dropdown to this period if possible
-    #                     if hasattr(self, "display_month_row") and self.display_month_row is not None:
-    #                         # Repopulate ComboRow items with new bimonthly_labels before setting value
-    #                         self.display_month_row.populate(bimonthly_labels, selected_item=label, update_settings=True, trigger_callback=True)
-    #                         return
-    #                     break
-    #             else:
-    #                 self.clear_labels("error")
-    #                 self.set_top_label("\nActivity\nLog\nEmpty", **kwargs)
-    #                 self.set_media(media_path=default_media, size=0.9)
-    #                 self.set_background_color(color=[255, 255, 255, 255], update=True)
-
-    #         except Exception:
-    #             self.clear_labels("error")
-    #             self.set_top_label("\nRequest\nFailed", **kwargs)
-    #             self.set_media(media_path=default_media, size=0.9)
-    #             self.set_background_color(color=[255, 255, 255, 255], update=True)
-    #     except Exception:
-    #         self.clear_labels("error")
-    #         self.set_top_label("\nInternal\nError", **kwargs)
-    #         self.set_media(media_path=default_media, size=0.9)
-    #         self.set_background_color(color=[255, 255, 255, 255], update=True)
     def fetch_and_display_contributions(self):
+        # Common red label parameters
         red = [255, 100, 100]
-        label_kwargs = {
-            "color": red,
-            "outline_width": 1,
-            "font_size": 17,
-            "font_family": "cantarell"
-        }
+        kwargs = {"color": red, "outline_width": 1, "font_size": 17, "font_family": "cantarell"}
         default_media = os.path.join(self.plugin_base.PATH, "assets", "info.png")
 
         try:
@@ -479,7 +318,8 @@ class ContributionsActions(ActionBase):
 
             if not github_token or not github_user:
                 self.clear_labels("error")
-                self.set_top_label("\nConfigure\nContributions\nPlugin", **label_kwargs)
+                self.set_background_color(color=[255, 255, 255, 255], update=True)
+                self.set_top_label("\nConfigure\nContributions\nPlugin", **kwargs)
                 self.set_media(media_path=default_media, size=0.9)
                 return
 
@@ -500,83 +340,128 @@ class ContributionsActions(ActionBase):
             }
             """
 
-            headers = {"Authorization": f"Bearer {github_token}"}
-            response = requests.post(
-                "https://api.github.com/graphql",
-                json={"query": query, "variables": {"login": github_user}},
-                headers=headers,
-                timeout=15
-            )
+            headers = {
+                "Authorization": f"Bearer {github_token}"
+            }
 
-            if response.status_code != 200:
-                self.clear_labels("error")
-                label = "\nInvalid\nToken" if response.status_code == 401 else "\nAPI\nError"
-                self.set_top_label(label, **label_kwargs)
-                self.set_media(media_path=default_media, size=0.9)
-                return
+            try:
+                response = requests.post(
+                    "https://api.github.com/graphql",
+                    json={"query": query, "variables": {"login": github_user}},
+                    headers=headers,
+                    timeout=15
+                )
+                status = response.status_code
 
-            data = response.json()
-            if not data.get("data") or data["data"]["user"] is None:
-                self.clear_labels("error")
-                self.set_top_label("\nUser\nNot Found", **label_kwargs)
-                self.set_media(media_path=default_media, size=0.9)
-                return
-
-            weeks_data = data["data"]["user"]["contributionsCollection"]["contributionCalendar"]["weeks"]
-            if not weeks_data:
-                self.clear_labels("error")
-                self.set_top_label("\nNo\nData", **label_kwargs)
-                self.set_media(media_path=default_media, size=0.9)
-                return
-
-            # Process contributions into bimonthly ranges
-            last_date = datetime.strptime(weeks_data[-1]["contributionDays"][-1]["date"], "%Y-%m-%d")
-            bimonthly_ranges = self.get_bimonthly_ranges(last_date)
-            counts, images, labels = [], [], []
-
-            plugin_path = self.plugin_base.PATH
-            for idx, (start, end) in enumerate(bimonthly_ranges):
-                count = 0
-                cell_map = {}
-                week_indices = set()
-
-                for week_idx, week in enumerate(weeks_data):
-                    for day_idx, day in enumerate(week["contributionDays"]):
-                        date_obj = datetime.strptime(day["date"], "%Y-%m-%d")
-                        if start <= date_obj <= end:
-                            cell_map[(week_idx, day_idx)] = (day["date"], day["contributionCount"])
-                            week_indices.add(week_idx)
-                            count += day["contributionCount"]
-
-                counts.append(count)
-                labels.append(f"{start.strftime('%b')}-{end.strftime('%b')}")
-                if week_indices:
-                    img_path = self.save_contributions_image(cell_map, sorted(week_indices), idx, plugin_path)
-                    images.append(img_path)
-                else:
-                    images.append(None)
-
-            self._quarter_labels = labels
-            self._quarter_images = images
-            self._quarter_counts = counts
-
-            # Find most recent period with data and trigger UI update via dropdown callback
-            for i in reversed(range(len(counts))):
-                if counts[i] > 0:
-                    latest_label = labels[i]
-                    if hasattr(self, "display_month_row") and self.display_month_row is not None:
-                        self.display_month_row.populate(labels, selected_item=latest_label, update_settings=True, trigger_callback=True)
+                if status != 200:
+                    self.clear_labels("error")
+                    label = "\nInvalid\nToken" if status == 401 else "\nAPI\nError"
+                    self.set_top_label(label, **kwargs)
+                    self.set_media(media_path=default_media, size=0.9)
+                    self.set_background_color(color=[255, 255, 255, 255], update=True)
                     return
 
-            # No activity found in any period
-            self.clear_labels("error")
-            self.set_top_label("\nActivity\nLog\nEmpty", **label_kwargs)
-            self.set_media(media_path=default_media, size=0.9)
+                data = response.json()
+                if "data" not in data or data["data"]["user"] is None:
+                    self.clear_labels("error")
+                    self.set_top_label("\nUser\nNot Found", **kwargs)
+                    self.set_media(media_path=default_media, size=0.9)
+                    self.set_background_color(color=[255, 255, 255, 255], update=True)
+                    return
 
+                weeks_data = data["data"]["user"]["contributionsCollection"]["contributionCalendar"]["weeks"]
+                if not weeks_data:
+                    self.clear_labels("error")
+                    self.set_top_label("\nNo\nData", **kwargs)
+                    self.set_media(media_path=default_media, size=0.9)
+                    self.set_background_color(color=[255, 255, 255, 255], update=True)
+                    return
+
+                # Find the last date in the dataset (last day of last week)
+                last_week = weeks_data[-1]
+                last_day = last_week["contributionDays"][-1]["date"]
+                last_date = datetime.strptime(last_day, "%Y-%m-%d")
+
+                # Use staticmethod for bimonthly ranges
+                bimonthly_ranges = self.get_bimonthly_ranges(last_date)
+                bimonthly_counts = []
+                bimonthly_images = []
+                plugin_path = self.plugin_base.PATH
+
+                bimonthly_labels = []
+                for idx, (start, end) in enumerate(bimonthly_ranges):
+                    count = 0
+                    cell_map = {}
+                    week_indices = set()
+                    for week_idx, week in enumerate(weeks_data):
+                        for day_idx, day in enumerate(week["contributionDays"]):
+                            date_str = day["date"]
+                            c = day["contributionCount"]
+                            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+                            if start <= date_obj <= end:
+                                cell_map[(week_idx, day_idx)] = (date_str, c)
+                                week_indices.add(week_idx)
+                                count += c
+                    bimonthly_counts.append(count)
+                    label = f"{start.strftime('%b')}-{end.strftime('%b')}"
+                    bimonthly_labels.append(label)
+                    if week_indices:
+                        img_path = self.save_contributions_image(cell_map, sorted(week_indices), idx, plugin_path)
+                        bimonthly_images.append(img_path)
+                    else:
+                        bimonthly_images.append(None)
+
+                # Cache for ComboRow on_change
+                self._quarter_labels = bimonthly_labels
+                self._quarter_images = bimonthly_images
+                self._quarter_counts = bimonthly_counts
+
+                # Display the most recent bimonthly period with data and image
+                for i in reversed(range(9)):
+                    if bimonthly_counts[i] > 0:
+                        start, end = bimonthly_ranges[i]
+                        label = bimonthly_labels[i]
+                        self.clear_labels("success")
+                        # Show/hide top label (contribution count)
+                        show_top_label = self.get_settings().get("show_top_label", True)
+                        if show_top_label:
+                            self.set_top_label(f"{bimonthly_counts[i]}", color=[100, 255, 100], outline_width=4, font_size=18, font_family="cantarell")
+                        else:
+                            self.set_top_label(None)
+                        # Show/hide bottom label
+                        show_bottom_label = self.get_settings().get("show_bottom_label", True)
+                        if show_bottom_label:
+                            self.set_bottom_label(label, color=[100, 200, 255], outline_width=2, font_size=18, font_family="cantarell")
+                        else:
+                            self.set_bottom_label(None)
+                        # Show the generated image for this period if available
+                        if bimonthly_images[i]:
+                            self.set_media(media_path=bimonthly_images[i], size=0.49)
+                        else:
+                            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
+                        # Sync ComboRow dropdown to this period if possible
+                        if hasattr(self, "display_month_row") and self.display_month_row is not None:
+                            # Repopulate ComboRow items with new bimonthly_labels before setting value
+                            self.display_month_row.populate(bimonthly_labels, selected_item=label, update_settings=True, trigger_callback=True)
+                            return
+                        break
+                else:
+                    self.clear_labels("error")
+                    self.set_top_label("\nActivity\nLog\nEmpty", **kwargs)
+                    self.set_media(media_path=default_media, size=0.9)
+                    self.set_background_color(color=[255, 255, 255, 255], update=True)
+
+            except Exception:
+                self.clear_labels("error")
+                self.set_top_label("\nRequest\nFailed", **kwargs)
+                self.set_media(media_path=default_media, size=0.9)
+                self.set_background_color(color=[255, 255, 255, 255], update=True)
         except Exception:
             self.clear_labels("error")
-            self.set_top_label("\nRequest\nFailed", **label_kwargs)
+            self.set_top_label("\nInternal\nError", **kwargs)
             self.set_media(media_path=default_media, size=0.9)
+            self.set_background_color(color=[255, 255, 255, 255], update=True)
+
 
 
     def start_refresh_timer(self):
