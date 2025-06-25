@@ -442,7 +442,8 @@ class ContributionsActions(ActionBase):
                             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
                         # Sync ComboRow dropdown to this period if possible
                         if hasattr(self, "display_month_row") and self.display_month_row is not None:
-                            self.display_month_row.set_value(label)
+                            # Repopulate ComboRow items with new bimonthly_labels before setting value
+                            self.display_month_row.populate(bimonthly_labels, selected_item=label, update_settings=True, trigger_callback=True)
                         break
                 else:
                     self.clear_labels("error")
