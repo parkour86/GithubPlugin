@@ -343,6 +343,7 @@ class ContributionsActions(ActionBase):
             log.info(f"[DEBUG] Fetching contributions for {github_user}")
 
             if not github_token or not github_user:
+                log.info("[DEBUG] No github_token or github_user, aborting fetch_and_display_contributions")
                 self.clear_labels("error")
                 self.set_background_color(color=[255, 255, 255, 255], update=True)
                 self.set_top_label("\nConfigure\nGithub\nPlugin", **kwargs)
@@ -427,6 +428,7 @@ class ContributionsActions(ActionBase):
                     bimonthly_counts.append(count)
                     label = f"{start.strftime('%b').upper()}-{end.strftime('%b').upper()} ({count})"
                     bimonthly_labels.append(label)
+                    log.info(f"[DEBUG] Built label: {label} with count: {count} for idx: {idx}")
                     if week_indices:
                         img_path = self.save_contributions_image(cell_map, sorted(week_indices), idx, plugin_path)
                         bimonthly_images.append(img_path)
@@ -437,12 +439,16 @@ class ContributionsActions(ActionBase):
                 self._quarter_images = bimonthly_images
                 self._quarter_counts = bimonthly_counts
 
+                log.info(f"[DEBUG] All bimonthly_labels: {bimonthly_labels}")
+                log.info(f"[DEBUG] All bimonthly_counts: {bimonthly_counts}")
+
                 first_with_data = next(
                     ((lbl, img, cnt) for lbl, img, cnt in zip(bimonthly_labels, bimonthly_images, bimonthly_counts) if cnt > 0),
                     (None, None, None)
                 )
 
                 if first_with_data[0] is None:
+                    log.info("[DEBUG] No data found for any period, aborting.")
                     self.clear_labels("error")
                     self.set_top_label("\nActivity\nLog\nEmpty", **kwargs)
                     self.set_media(media_path=default_media, size=0.9)
@@ -463,12 +469,16 @@ class ContributionsActions(ActionBase):
                     def label_month_part(lbl):
                         return lbl.split(" (")[0] if lbl else ""
 
+                    log.info(f"[DEBUG] Current month_key from settings: {month_key}")
+                    log.info(f"[DEBUG] Current ComboRow items: {current_items}")
+
                     if current_items is None or list(current_items) != list(bimonthly_labels):
                         if month_key:
                             for lbl in bimonthly_labels:
                                 if label_month_part(lbl) == month_key:
                                     selected_label = lbl
                                     break
+                        log.info(f"[DEBUG] Populating ComboRow with labels: {bimonthly_labels}, selected_label: {selected_label}")
                         self.display_month_row.populate(
                             bimonthly_labels,
                             selected_item=selected_label,
@@ -484,15 +494,20 @@ class ContributionsActions(ActionBase):
                                     selected_label = lbl
                                     break
 
+                log.info(f"[DEBUG] Final selected_label: {selected_label}")
+
                 # Ensure img_path and count match the actual selected label
                 if selected_label not in bimonthly_labels:
+                    log.info(f"[DEBUG] selected_label '{selected_label}' not in bimonthly_labels, defaulting to first.")
                     selected_label = bimonthly_labels[0]
                 idx = bimonthly_labels.index(selected_label)
                 img_path = bimonthly_images[idx]
                 count = bimonthly_counts[idx]
+                log.info(f"[DEBUG] Using idx: {idx}, img_path: {img_path}, count: {count} for selected_label: {selected_label}")
 
                 # Top label (count)
                 if self.get_settings().get("show_top_label", True):
+                    log.info(f"[DEBUG] Setting top label to count: {count}")
                     self.set_top_label(
                         f"{count}",
                         color=[100, 255, 100],
@@ -501,10 +516,12 @@ class ContributionsActions(ActionBase):
                         font_family="cantarell"
                     )
                 else:
+                    log.info("[DEBUG] Hiding top label")
                     self.set_top_label(None)
 
                 # Bottom label (month range)
                 if self.get_settings().get("show_bottom_label", True):
+                    log.info(f"[DEBUG] Setting bottom label to: {selected_label.split(' (')[0]}")
                     self.set_bottom_label(
                         selected_label.split(" (")[0],
                         color=[100, 255, 100],
@@ -513,12 +530,15 @@ class ContributionsActions(ActionBase):
                         font_family="cantarell"
                     )
                 else:
+                    log.info("[DEBUG] Hiding bottom label")
                     self.set_bottom_label(None)
 
                 # Set contribution image
                 if img_path:
+                    log.info(f"[DEBUG] Setting media to img_path: {img_path}")
                     self.set_media(media_path=img_path, size=0.68, valign=-.7)
                 else:
+                    log.info(f"[DEBUG] Setting media to default_media: {default_media}")
                     self.set_media(media_path=default_media, size=0.9)
 
             except Exception:
