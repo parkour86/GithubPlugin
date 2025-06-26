@@ -37,12 +37,25 @@ class ContributionsActions(ActionBase):
         github_user = settings.get("github_user", "")
         if github_token and github_user:
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
+            self.restore_labels_from_settings()
             self.fetch_and_display_contributions()
         else:
             self.clear_labels("error")
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
             self.set_top_label("\nConfigure\nGithub\nPlugin", color=[255, 100, 100], outline_width=1, font_size=17)
         self.start_refresh_timer()
+
+    def restore_labels_from_settings(self):
+        settings = self.get_settings()
+        # Get the saved month part (e.g., "MAY-JUN")
+        saved_month = settings.get("selected_month", None)
+        if saved_month:
+            # Find the label in the ComboRow that matches the saved month part
+            for label in getattr(self.display_month_row, "items", []):
+                if label.split(" (")[0] == saved_month:
+                    # Set the ComboRow selection (this should trigger on_display_month_changed)
+                    self.display_month_row.set_value(label)
+                    break
 
     def on_key_down(self) -> None:
         settings = self.get_settings()
