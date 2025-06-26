@@ -36,7 +36,7 @@ class ContributionsActions(ActionBase):
         github_token = settings.get("github_token", "")
         github_user = settings.get("github_user", "")
         selected_month = settings.get("selected_month", "")
-        log.info(f"[MY DEBUG] {selected_month}")
+        log.info(f"[MY DEBUG] *{selected_month}*")
         if github_token and github_user:
             #self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
             self.fetch_and_display_contributions()
@@ -477,6 +477,8 @@ class ContributionsActions(ActionBase):
                 selected_label = first_with_data[0]
                 month_key = self.get_settings().get("selected_month", None)
 
+                log.info(f"[MY DEBUG] Selected label: *{selected_label}*")
+
                 def label_month_part(lbl):
                     return lbl.split(" (")[0] if lbl else ""
 
@@ -490,9 +492,11 @@ class ContributionsActions(ActionBase):
                     )
 
                     for lbl in bimonthly_labels:
+                        log.info(f"[MY DEBUG] lbl: *{lbl}*, label_month_part: *{label_month_part(lbl)}*, month_key: *{month_key}*")
                         if label_month_part(lbl) == month_key:
                             selected_label = lbl
                             break
+
 
                     if selected_label:
                         self.display_month_row.set_value(selected_label)
