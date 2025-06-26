@@ -212,7 +212,7 @@ class PullRequestsActions(ActionBase):
                     data = response.json()
                     state = data.get("state", "")
                     states.append(state)
-                    print(f"URL: {url}, Sha: {sha}, State: {state}")
+                    log.info(f"URL: {url}, Sha: {sha}, State: {state}")
             except Exception:
                 continue
 
