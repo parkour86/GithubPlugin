@@ -509,14 +509,7 @@ class ContributionsActions(ActionBase):
                     selected_month_key = self.get_settings().get("selected_month", None)
                     log.info(f"[MY DEBUG] selected_month_key: {selected_month_key}")
 
-                    # Populate the display_month_row with the bimonthly_labels
-                    # self.display_month_row.populate(
-                    #     bimonthly_labels,
-                    #     selected_item=None,
-                    #     update_settings=False,
-                    #     trigger_callback=False
-                    # )
-
+                    # If the selected_month is in the settings then loop over the Month Period dropdown options and set the selected_label
                     if selected_month_key:
                         for lbl in bimonthly_labels:
                             log.info(f"[MY DEBUG] lbl: *{lbl}*, label_month_part: *{label_month_part(lbl)}*, selected_month_key: *{selected_month_key}*")
@@ -525,6 +518,9 @@ class ContributionsActions(ActionBase):
                                 selected_label = lbl
                                 break
 
+                    if not selected_label:
+                        log.info("[MY DEBUG] No match found")
+                        selected_label = label_month_part(first_with_data[0])
 
 
 
