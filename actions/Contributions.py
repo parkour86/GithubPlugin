@@ -480,7 +480,7 @@ class ContributionsActions(ActionBase):
                 # Jump into this loop if the button was just created
                 if hasattr(self, "display_month_row") and self.display_month_row is not None:
                     # Pull the selected month from the settings
-                    month_key = self.get_settings().get("selected_month", None)
+                    #month_key = self.get_settings().get("selected_month", None)
 
                     # Populate the display_month_row with the bimonthly_labels
                     self.display_month_row.populate(
@@ -490,12 +490,12 @@ class ContributionsActions(ActionBase):
                         trigger_callback=False
                     )
 
-                    if month_key:
-                        for lbl in bimonthly_labels:
-                            log.info(f"[MY DEBUG] lbl: *{lbl}*, label_month_part: *{label_month_part(lbl)}*, month_key: *{month_key}*")
-                            if label_month_part(lbl) == month_key:
-                                selected_label = lbl
-                                break
+                    # if month_key:
+                    #     for lbl in bimonthly_labels:
+                    #         log.info(f"[MY DEBUG] lbl: *{lbl}*, label_month_part: *{label_month_part(lbl)}*, month_key: *{month_key}*")
+                    #         if label_month_part(lbl) == month_key:
+                    #             selected_label = lbl
+                    #             break
 
                     log.info(f"[App was created] Selected label: {selected_label}")
 
@@ -505,9 +505,27 @@ class ContributionsActions(ActionBase):
                         selected_label = first_with_data[0]
                         self.display_month_row.set_value(selected_label)
                 else:
-                    selected_label = label_month_part(first_with_data[0])
+                    # Pull the selected month from the settings
+                    selected_month_key = self.get_settings().get("selected_month", None)
+                    log.info(f"[MY DEBUG] selected_month_key: {selected_month_key}")
 
-                log.info(f"[MY DEBUG] Selected label: {selected_label}")
+                    # Populate the display_month_row with the bimonthly_labels
+                    # self.display_month_row.populate(
+                    #     bimonthly_labels,
+                    #     selected_item=None,
+                    #     update_settings=False,
+                    #     trigger_callback=False
+                    # )
+
+                    if selected_month_key:
+                        for lbl in bimonthly_labels:
+                            log.info(f"[MY DEBUG] lbl: *{lbl}*, label_month_part: *{label_month_part(lbl)}*, selected_month_key: *{selected_month_key}*")
+                            if label_month_part(lbl) == selected_month_key:
+                                selected_label = lbl
+                                self.display_month_row.set_value(selected_label)
+                                break
+                    #selected_label = first_with_data[0]
+
 
 
 
@@ -545,7 +563,6 @@ class ContributionsActions(ActionBase):
                 idx = bimonthly_labels.index(selected_label)
                 img_path = bimonthly_images[idx]
                 count = bimonthly_counts[idx]
-                log.info(f"[DEBUG] Final selected_label: {selected_label}")
                 log.info(f"[DEBUG] Using idx: {idx}, img_path: {img_path}, count: {count} for selected_label: {selected_label}")
 
                 # Top label (count)
