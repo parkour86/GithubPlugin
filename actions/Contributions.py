@@ -35,6 +35,8 @@ class ContributionsActions(ActionBase):
         settings = self.get_settings()
         github_token = settings.get("github_token", "")
         github_user = settings.get("github_user", "")
+        selected_month = settings.get("selected_month", "")
+        log.info(f"[MY DEBUG] {selected_month}")
         if github_token and github_user:
             #self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
             self.fetch_and_display_contributions()
@@ -47,7 +49,6 @@ class ContributionsActions(ActionBase):
     def on_key_down(self) -> None:
         settings = self.get_settings()
         github_user = settings.get("github_user", "")
-        self.fetch_and_display_contributions()
         if github_user:
             import webbrowser
             url = f"https://github.com/{github_user}"
