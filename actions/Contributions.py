@@ -606,17 +606,19 @@ class ContributionsActions(ActionBase):
                     log.info(f"[DEBUG] Setting media to default_media: {default_media}")
                     self.set_media(media_path=default_media, size=0.9)
 
-            except Exception:
+            except Exception as e:
                 self.clear_labels("error")
                 self.set_top_label("\nRequest\nFailed", **kwargs)
                 self.set_media(media_path=default_media, size=0.9)
                 self.set_background_color(color=[255, 255, 255, 255], update=True)
+                log.error(f"[DEBUG] API Request Error:{e}", exc_info=True)
 
-        except Exception:
+        except Exception as e:
             self.clear_labels("error")
             self.set_top_label("\nInternal\nError", **kwargs)
             self.set_media(media_path=default_media, size=0.9)
             self.set_background_color(color=[255, 255, 255, 255], update=True)
+            log.error(f"[DEBUG] API Internal Error:{e}", exc_info=True)
 
 #
 
