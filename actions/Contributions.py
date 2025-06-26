@@ -100,7 +100,7 @@ class ContributionsActions(ActionBase):
             # fallback to all possible periods if not yet populated
             bimonthly_ranges = self.get_bimonthly_ranges(datetime.now())
             month_labels = [f"{start.strftime('%b')}-{end.strftime('%b')}" for start, end in bimonthly_ranges]
-        selected_month = settings.get("display_contribution_month", "")
+        selected_month = settings.get("selected_month", "")
         self.display_month_row = ComboRow(
             action_core=self,
             var_name="display_contribution_month",
