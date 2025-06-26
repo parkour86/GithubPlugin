@@ -476,6 +476,10 @@ class ContributionsActions(ActionBase):
                 def label_month_part(lbl):
                     return lbl.split(" (")[0] if lbl else ""
 
+                # Pull the selected month from the settings
+                selected_month_key = self.get_settings().get("selected_month", None)
+                log.info(f"[MY DEBUG] selected_month_key: {selected_month_key}")
+
                 selected_label = None
                 # Jump into this loop if the button was just created
                 if hasattr(self, "display_month_row") and self.display_month_row is not None:
@@ -490,12 +494,13 @@ class ContributionsActions(ActionBase):
                         trigger_callback=False
                     )
 
-                    # if month_key:
-                    #     for lbl in bimonthly_labels:
-                    #         log.info(f"[MY DEBUG] lbl: *{lbl}*, label_month_part: *{label_month_part(lbl)}*, month_key: *{month_key}*")
-                    #         if label_month_part(lbl) == month_key:
-                    #             selected_label = lbl
-                    #             break
+                    if selected_month_key:
+                        for lbl in bimonthly_labels:
+                            log.info(f"[MY DEBUG] lbl: *{lbl}*, label_month_part: *{label_month_part(lbl)}*, selected_month_key: *{selected_month_key}*")
+                            if label_month_part(lbl) == selected_month_key:
+                                log.info("[MY DEBUG] Matched")
+                                selected_label = lbl
+                                break
 
                     log.info(f"[App was created] Selected label: {selected_label}")
 
@@ -505,10 +510,6 @@ class ContributionsActions(ActionBase):
                         selected_label = first_with_data[0]
                         self.display_month_row.set_value(selected_label)
                 else:
-                    # Pull the selected month from the settings
-                    selected_month_key = self.get_settings().get("selected_month", None)
-                    log.info(f"[MY DEBUG] selected_month_key: {selected_month_key}")
-
                     # If the selected_month is in the settings then loop over the Month Period dropdown options and set the selected_label
                     if selected_month_key:
                         for lbl in bimonthly_labels:
@@ -520,7 +521,7 @@ class ContributionsActions(ActionBase):
 
                     if not selected_label:
                         log.info("[MY DEBUG] No match found")
-                        selected_label = label_month_part(first_with_data[0])
+                        selected_label = first_with_data[0]
 
 
 
