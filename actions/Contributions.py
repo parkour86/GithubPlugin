@@ -36,9 +36,8 @@ class ContributionsActions(ActionBase):
         github_token = settings.get("github_token", "")
         github_user = settings.get("github_user", "")
         if github_token and github_user:
-            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
+            #self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
             self.fetch_and_display_contributions()
-            self.restore_labels_from_settings()
         else:
             self.clear_labels("error")
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
@@ -133,6 +132,8 @@ class ContributionsActions(ActionBase):
         show_bottom_label_row = Adw.SwitchRow(title="Show/Hide Bottom Label")
         show_bottom_label_row.set_active(show_bottom_label)
         show_bottom_label_row.connect("notify::active", self.on_show_bottom_label_changed)
+
+        self.restore_labels_from_settings()
 
         return [
             token_entry,
