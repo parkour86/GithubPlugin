@@ -597,10 +597,10 @@ class ContributionsActions(ActionBase):
             return True  # Continue timer
 
         try:
-            #self._refresh_timer_id = GLib.timeout_add_seconds(refresh_rate * 3600, _timer_callback)
-            #
-            #
-            self._refresh_timer_id = GLib.timeout_add_seconds(refresh_rate * 60, _timer_callback)
+            # Refresh rate interval in hours
+            self._refresh_timer_id = GLib.timeout_add_seconds(refresh_rate * 3600, _timer_callback)
+            # Refresh rate interval in minutes
+            #self._refresh_timer_id = GLib.timeout_add_seconds(refresh_rate * 60, _timer_callback)
 
         except Exception:
             self._refresh_timer_id = None
