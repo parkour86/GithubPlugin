@@ -212,8 +212,11 @@ class PullRequestsActions(ActionBase):
                     data = response.json()
                     state = data.get("state", "")
                     states.append(state)
+                    print(f"URL: {url}, Sha: {sha}, State: {state}")
             except Exception:
                 continue
+
+
 
         # Set icon based on state priority
         if "failure" in states:
