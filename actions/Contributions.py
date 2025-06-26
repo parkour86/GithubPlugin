@@ -75,7 +75,7 @@ class ContributionsActions(ActionBase):
         user_entry.connect("notify::text", self.on_user_changed)
 
         # ComboRow for refresh rate (hours)
-        refresh_options = ["0", "1", "6", "12", "24", "48"]
+        refresh_options = ["0", "1", "6", "12", "24"]
         refresh_rate_row = ComboRow(
             action_core=self,
             var_name="refresh_rate",
