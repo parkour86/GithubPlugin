@@ -480,8 +480,8 @@ class ContributionsActions(ActionBase):
                 def label_month_part(lbl):
                     return lbl.split(" (")[0] if lbl else ""
 
+                selected_label = None
                 if hasattr(self, "display_month_row") and self.display_month_row is not None:
-                    # Populate the dropdown (no selection yet)
                     self.display_month_row.populate(
                         bimonthly_labels,
                         selected_item=None,
@@ -489,14 +489,18 @@ class ContributionsActions(ActionBase):
                         trigger_callback=False
                     )
 
-                    # Try to match the saved month from settings
                     for lbl in bimonthly_labels:
                         if label_month_part(lbl) == month_key:
                             selected_label = lbl
                             break
 
-                    # Set dropdown to restored or fallback label
-                    self.display_month_row.set_value(selected_label)
+                    if selected_label:
+                        self.display_month_row.set_value(selected_label)
+                    else:
+                        selected_label = first_with_data[0]
+                        self.display_month_row.set_value(selected_label)
+                else:
+                    selected_label = first_with_data[0]
 
                 # ✅ FINAL: use selected_label to get idx, img_path, and count
                 if selected_label in bimonthly_labels:
