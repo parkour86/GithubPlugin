@@ -218,7 +218,9 @@ class PullRequestsActions(ActionBase):
 
                     # Add all conclusions from this SHA
                     states.extend(conclusions)
-
+                    # Break out of the loop if any failure is found
+                    if "failure" in conclusions:
+                        break
                 else:
                     log.warning(f"Failed to fetch check-runs for SHA {sha}: {response.status_code}")
             except Exception as e:
@@ -230,8 +232,6 @@ class PullRequestsActions(ActionBase):
             icon_color = "#A00000"  # red
         elif "cancelled" in states or "timed_out" in states:
             icon_color = "#B7B700"  # yellow
-        elif not states:  # e.g., all were skipped or nothing returned
-            icon_color = "#595959"  # Gray
         elif "success" in states:
             icon_color = "#236B23"  # green
         else:
