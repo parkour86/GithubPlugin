@@ -493,6 +493,9 @@ class ContributionsActions(ActionBase):
                                 if label_month_part(lbl) == month_key:
                                     selected_label = lbl
                                     break
+                        # Explicitly set the ComboRow's selected value to match the config
+                        if hasattr(self.display_month_row, "set_value"):
+                            self.display_month_row.set_value(selected_label)
                         log.info(f"[DEBUG] Populating ComboRow with labels: {bimonthly_labels}, selected_label: {selected_label}")
                         self.display_month_row.populate(
                             bimonthly_labels,
