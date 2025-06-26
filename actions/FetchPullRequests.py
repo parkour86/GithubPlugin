@@ -218,6 +218,7 @@ class PullRequestsActions(ActionBase):
 
                     # Add all conclusions from this SHA
                     states.extend(conclusions)
+
                     # Break out of the loop if any failure is found
                     if "failure" in conclusions:
                         break

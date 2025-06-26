@@ -3,7 +3,7 @@ from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.PluginManager.ActionHolder import ActionHolder
 
 # Import actions
-from .actions.PullRequests import PullRequestsActions
+from .actions.FetchPullRequests import PullRequestsActions
 from .actions.Contributions import ContributionsActions
 
 class PullRequestsPlugin(PluginBase):
