@@ -120,8 +120,9 @@ class ContributionsActions(ActionBase):
         show_bottom_label_row.set_active(show_bottom_label)
         show_bottom_label_row.connect("notify::active", self.on_show_bottom_label_changed)
 
-        # After ComboRow is created and value is restored, update the UI
-        self.refresh_ui_from_dropdown()
+        # After ComboRow is created and value is restored, update the UI (deferred)
+        from gi.repository import GLib
+        GLib.idle_add(self.refresh_ui_from_dropdown)
         return [
             token_entry,
             user_entry,
