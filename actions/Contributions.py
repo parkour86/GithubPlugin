@@ -44,19 +44,6 @@ class ContributionsActions(ActionBase):
             self.set_top_label("\nConfigure\nGithub\nPlugin", color=[255, 100, 100], outline_width=1, font_size=17)
         self.start_refresh_timer()
 
-    def restore_labels_from_settings(self):
-        settings = self.get_settings()
-        # Get the saved month part (e.g., "MAY-JUN")
-        saved_month = settings.get("selected_month", None)
-        if saved_month:
-            # Find the label in the ComboRow that matches the saved month part
-            for label in getattr(self.display_month_row, "items", []):
-                if label.split(" (")[0] == saved_month:
-                    # Set the ComboRow selection (this should trigger on_display_month_changed)
-                    self.display_month_row.set_value(label)
-                    self.on_display_month_changed(self.display_month_row, label, None)
-                    break
-
     def on_key_down(self) -> None:
         settings = self.get_settings()
         github_user = settings.get("github_user", "")
@@ -133,6 +120,8 @@ class ContributionsActions(ActionBase):
         show_bottom_label_row.set_active(show_bottom_label)
         show_bottom_label_row.connect("notify::active", self.on_show_bottom_label_changed)
 
+        # After ComboRow is created and value is restored, update the UI
+        self.refresh_ui_from_dropdown()
         return [
             token_entry,
             user_entry,
@@ -205,6 +194,13 @@ class ContributionsActions(ActionBase):
             self.set_background_color(color=[0, 0, 0, 0], update=True)
         elif status == "error":
             self.set_background_color(color=[255, 255, 255, 255], update=True)
+
+    def refresh_ui_from_dropdown(self):
+        # Get the current value from the ComboRow and update the UI
+        if hasattr(self, "display_month_row") and self.display_month_row is not None:
+            value = self.display_month_row.get_value() if hasattr(self.display_month_row, "get_value") else None
+            if value:
+                self.on_display_month_changed(self.display_month_row, value, None)
 
     def on_show_top_label_changed(self, widget, *args):
         settings = self.get_settings()
