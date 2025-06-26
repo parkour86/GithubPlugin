@@ -133,8 +133,6 @@ class ContributionsActions(ActionBase):
         show_bottom_label_row.set_active(show_bottom_label)
         show_bottom_label_row.connect("notify::active", self.on_show_bottom_label_changed)
 
-        self.restore_labels_from_settings()
-
         return [
             token_entry,
             user_entry,
