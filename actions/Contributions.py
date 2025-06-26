@@ -470,11 +470,9 @@ class ContributionsActions(ActionBase):
                     self.set_background_color(color=[255, 255, 255, 255], update=True)
                     return
 
-                # Begin rendering content
-                label, img_path, count = first_with_data
                 self.clear_labels("success")
 
-                selected_label = label  # default to first with data
+                selected_label = first_with_data[0]  # default to first with data
                 month_key = None
 
                 if hasattr(self, "display_month_row") and self.display_month_row is not None:
@@ -516,6 +514,13 @@ class ContributionsActions(ActionBase):
                         self.display_month_row.set_value(selected_label)
                         self.on_display_month_changed(self.display_month_row, selected_label, None)
 
+                # ✅ Now get img_path and count AFTER selected_label is finalized
+                if selected_label in bimonthly_labels:
+                    idx = bimonthly_labels.index(selected_label)
+                    img_path = bimonthly_images[idx]
+                    count = bimonthly_counts[idx]
+                else:
+                    img_path, count = None, 0
                     # if current_items is None or list(current_items) != list(bimonthly_labels):
                     #     if month_key:
                     #         for lbl in bimonthly_labels:
