@@ -473,14 +473,13 @@ class ContributionsActions(ActionBase):
                 self.clear_labels("success")
 
                 selected_label = first_with_data[0]  # default to first with data
-                month_key = None
+                month_key = self.get_settings().get("selected_month", None)
+
+                def label_month_part(lbl):
+                    return lbl.split(" (")[0] if lbl else ""
 
                 if hasattr(self, "display_month_row") and self.display_month_row is not None:
-                    month_key = self.get_settings().get("selected_month", None)
                     current_items = getattr(self.display_month_row, "items", None)
-
-                    def label_month_part(lbl):
-                        return lbl.split(" (")[0] if lbl else ""
 
                     log.info(f"[DEBUG] Current month_key from settings: {month_key}")
                     log.info(f"[DEBUG] Current ComboRow items: {current_items}")
@@ -493,34 +492,29 @@ class ContributionsActions(ActionBase):
                         trigger_callback=False
                     )
 
-                    # Attempt to restore user's previously selected month
-                    restored_label = None
-                    if month_key:
-                        for lbl in bimonthly_labels:
-                            if label_month_part(lbl) == month_key:
-                                restored_label = lbl
-                                break
+                    # Try to find matching label
+                    for lbl in bimonthly_labels:
+                        if label_month_part(lbl) == month_key:
+                            selected_label = lbl
+                            break
 
-                    # If we found a valid matching label, override the default
-                    if restored_label:
-                        selected_label = restored_label
-                        self.display_month_row.set_value(restored_label)
+                    # Set dropdown visually
+                    self.display_month_row.set_value(selected_label)
 
-                        # Ensure proper media and label update
-                        self.on_display_month_changed(self.display_month_row, restored_label, None)
-                    else:
-                        # fallback to first if no match
-                        selected_label = bimonthly_labels[0]
-                        self.display_month_row.set_value(selected_label)
-                        self.on_display_month_changed(self.display_month_row, selected_label, None)
-
-                # ✅ Now get img_path and count AFTER selected_label is finalized
+                # ✅ Now set media and labels based on FINAL selected_label
                 if selected_label in bimonthly_labels:
                     idx = bimonthly_labels.index(selected_label)
                     img_path = bimonthly_images[idx]
                     count = bimonthly_counts[idx]
                 else:
-                    img_path, count = None, 0
+                    idx = 0
+                    img_path = bimonthly_images[0]
+                    count = bimonthly_counts[0]
+
+                log.info(f"[DEBUG] Final selected_label: {selected_label}")
+                log.info(f"[DEBUG] Using idx: {idx}, img_path: {img_path}, count: {count} for selected_label: {selected_label}")
+
+
                     # if current_items is None or list(current_items) != list(bimonthly_labels):
                     #     if month_key:
                     #         for lbl in bimonthly_labels:
