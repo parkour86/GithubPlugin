@@ -32,6 +32,10 @@ class ContributionsActions(ActionBase):
         self._refresh_timer_id = None  # For periodic refresh
 
     def on_ready(self) -> None:
+        from gi.repository import GLib
+        GLib.idle_add(self._after_ui_loaded)
+
+    def _after_ui_loaded(self):
         settings = self.get_settings()
         github_token = settings.get("github_token", "")
         github_user = settings.get("github_user", "")
@@ -43,6 +47,7 @@ class ContributionsActions(ActionBase):
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
             self.set_top_label("\nConfigure\nGithub\nPlugin", color=[255, 100, 100], outline_width=1, font_size=17)
         self.start_refresh_timer()
+        return False  # Ensure this only runs once
 
     def on_key_down(self) -> None:
         settings = self.get_settings()
@@ -120,9 +125,6 @@ class ContributionsActions(ActionBase):
         show_bottom_label_row.set_active(show_bottom_label)
         show_bottom_label_row.connect("notify::active", self.on_show_bottom_label_changed)
 
-        # After ComboRow is created and value is restored, update the UI (deferred)
-        from gi.repository import GLib
-        GLib.idle_add(self.refresh_ui_from_dropdown)
         return [
             token_entry,
             user_entry,
