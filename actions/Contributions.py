@@ -521,10 +521,15 @@ class ContributionsActions(ActionBase):
                         for lbl in bimonthly_labels:
                             log.info(f"[MY DEBUG] lbl: *{lbl}*, label_month_part: *{label_month_part(lbl)}*, selected_month_key: *{selected_month_key}*")
                             if label_month_part(lbl) == selected_month_key:
+                                log.info("[MY DEBUG] Matched")
                                 selected_label = lbl
-                                self.display_month_row.set_value(selected_label)
                                 break
-                    #selected_label = first_with_data[0]
+
+                    if selected_label:
+                        self.display_month_row.set_value(selected_label)
+                    else:
+                        selected_label = first_with_data[0]
+                        self.display_month_row.set_value(selected_label)
 
 
 
