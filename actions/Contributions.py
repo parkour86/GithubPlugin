@@ -37,8 +37,8 @@ class ContributionsActions(ActionBase):
         github_user = settings.get("github_user", "")
         if github_token and github_user:
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
-            self.restore_labels_from_settings()
             self.fetch_and_display_contributions()
+            self.restore_labels_from_settings()
         else:
             self.clear_labels("error")
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
