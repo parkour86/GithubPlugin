@@ -470,49 +470,47 @@ class ContributionsActions(ActionBase):
                     self.set_background_color(color=[255, 255, 255, 255], update=True)
                     return
 
+                # Start clean
                 self.clear_labels("success")
 
-                selected_label = first_with_data[0]  # default to first with data
+                # Default to the first label with data
+                selected_label = first_with_data[0]
                 month_key = self.get_settings().get("selected_month", None)
 
                 def label_month_part(lbl):
                     return lbl.split(" (")[0] if lbl else ""
 
                 if hasattr(self, "display_month_row") and self.display_month_row is not None:
-                    current_items = getattr(self.display_month_row, "items", None)
-
-                    log.info(f"[DEBUG] Current month_key from settings: {month_key}")
-                    log.info(f"[DEBUG] Current ComboRow items: {current_items}")
-
-                    # Always populate the ComboRow to ensure it's synced
+                    # Populate the dropdown (no selection yet)
                     self.display_month_row.populate(
                         bimonthly_labels,
-                        selected_item=None,  # initially unset
+                        selected_item=None,
                         update_settings=False,
                         trigger_callback=False
                     )
 
-                    # Try to find matching label
+                    # Try to match the saved month from settings
                     for lbl in bimonthly_labels:
                         if label_month_part(lbl) == month_key:
                             selected_label = lbl
                             break
 
-                    # Set dropdown visually
+                    # Set dropdown to restored or fallback label
                     self.display_month_row.set_value(selected_label)
 
-                # ✅ Now set media and labels based on FINAL selected_label
+                # ✅ FINAL: use selected_label to get idx, img_path, and count
                 if selected_label in bimonthly_labels:
                     idx = bimonthly_labels.index(selected_label)
-                    img_path = bimonthly_images[idx]
-                    count = bimonthly_counts[idx]
                 else:
                     idx = 0
-                    img_path = bimonthly_images[0]
-                    count = bimonthly_counts[0]
+                    selected_label = bimonthly_labels[0]
+
+                img_path = bimonthly_images[idx]
+                count = bimonthly_counts[idx]
 
                 log.info(f"[DEBUG] Final selected_label: {selected_label}")
                 log.info(f"[DEBUG] Using idx: {idx}, img_path: {img_path}, count: {count} for selected_label: {selected_label}")
+
 
 
                     # if current_items is None or list(current_items) != list(bimonthly_labels):
