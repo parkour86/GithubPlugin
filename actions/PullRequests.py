@@ -199,35 +199,78 @@ class PullRequestsActions(ActionBase):
 
     def fetch_and_set_commit_status_icons(self, owner, repo, shas):
         import requests
+        headers = {
+            "Authorization": f"token {self.get_settings().get('github_token', '')}",
+            "Accept": "application/vnd.github.v3+json"
+        }
+
         states = []
+
         for sha in shas:
-            url = f"https://api.github.com/repos/{owner}/{repo}/commits/{sha}/status"
-            headers = {
-                "Authorization": f"token {self.get_settings().get('github_token', '')}",
-                "Accept": "application/vnd.github.v3+json"
-            }
+            url = f"https://api.github.com/repos/{owner}/{repo}/commits/{sha}/check-runs"
             try:
                 response = requests.get(url, headers=headers, timeout=10)
                 if response.status_code == 200:
                     data = response.json()
-                    state = data.get("state", "")
-                    states.append(state)
-                    log.info(f"URL: {url}, Sha: {sha}, State: {state}")
-            except Exception:
+                    conclusions = [run.get("conclusion") for run in data.get("check_runs", []) if run.get("status") == "completed"]
+
+                    log.info(f"SHA: {sha}, Check run conclusions: {conclusions}")
+
+                    # Add all conclusions from this SHA
+                    states.extend(conclusions)
+
+                else:
+                    log.warning(f"Failed to fetch check-runs for SHA {sha}: {response.status_code}")
+            except Exception as e:
+                log.error(f"Exception while fetching check-runs for {sha}: {e}")
                 continue
 
-
-
-        # Set icon based on state priority
+        # Decide icon color based on priority: failure > cancelled > pending > success
         if "failure" in states:
-            # Set icon to red
-            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#A00000.png"), size=0.9)
-        elif "pending" in states:
-            # Set icon to yellow
-            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#B7B700.png"), size=0.9)
+            icon_color = "#A00000"  # red
+        elif "cancelled" in states or "timed_out" in states:
+            icon_color = "#B7B700"  # yellow
+        elif not states:  # e.g., all were skipped or nothing returned
+            icon_color = "#595959"  # Gray
         elif "success" in states:
-            # Set icon to green
-            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#236B23.png"), size=0.9)
+            icon_color = "#236B23"  # green
+        else:
+            icon_color = "#595959"  # Gray
+
+        icon_path = os.path.join(self.plugin_base.PATH, "assets", f"{icon_color}.png")
+        self.set_media(media_path=icon_path, size=0.9)
+
+
+    # Legacy way of checking
+    # def fetch_and_set_commit_status_icons(self, owner, repo, shas):
+    #     import requests
+    #     states = []
+    #     for sha in shas:
+    #         url = f"https://api.github.com/repos/{owner}/{repo}/commits/{sha}/status"
+    #         headers = {
+    #             "Authorization": f"token {self.get_settings().get('github_token', '')}",
+    #             "Accept": "application/vnd.github.v3+json"
+    #         }
+    #         try:
+    #             response = requests.get(url, headers=headers, timeout=10)
+    #             if response.status_code == 200:
+    #                 data = response.json()
+    #                 state = data.get("state", "")
+    #                 states.append(state)
+    #                 log.info(f"URL: {url}, Sha: {sha}, State: {state}")
+    #         except Exception:
+    #             continue
+
+    #     # Set icon based on state priority
+    #     if "failure" in states:
+    #         # Set icon to red
+    #         self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#A00000.png"), size=0.9)
+    #     elif "pending" in states:
+    #         # Set icon to yellow
+    #         self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#B7B700.png"), size=0.9)
+    #     elif "success" in states:
+    #         # Set icon to green
+    #         self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#236B23.png"), size=0.9)
 
     def start_refresh_timer(self):
         try:
