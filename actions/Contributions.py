@@ -55,6 +55,7 @@ class ContributionsActions(ActionBase):
                 if label.split(" (")[0] == saved_month:
                     # Set the ComboRow selection (this should trigger on_display_month_changed)
                     self.display_month_row.set_value(label)
+                    self.on_display_month_changed(self.display_month_row, label, None)
                     break
 
     def on_key_down(self) -> None:
