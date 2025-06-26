@@ -495,15 +495,26 @@ class ContributionsActions(ActionBase):
                         trigger_callback=False
                     )
 
-                    # Try to match stored month key to actual label
+                    # Attempt to restore user's previously selected month
+                    restored_label = None
                     if month_key:
                         for lbl in bimonthly_labels:
                             if label_month_part(lbl) == month_key:
-                                selected_label = lbl
+                                restored_label = lbl
                                 break
 
-                    # Set the dropdown visually to the selected label
-                    self.display_month_row.set_value(selected_label)
+                    # If we found a valid matching label, override the default
+                    if restored_label:
+                        selected_label = restored_label
+                        self.display_month_row.set_value(restored_label)
+
+                        # Ensure proper media and label update
+                        self.on_display_month_changed(self.display_month_row, restored_label, None)
+                    else:
+                        # fallback to first if no match
+                        selected_label = bimonthly_labels[0]
+                        self.display_month_row.set_value(selected_label)
+                        self.on_display_month_changed(self.display_month_row, selected_label, None)
 
                     # if current_items is None or list(current_items) != list(bimonthly_labels):
                     #     if month_key:
