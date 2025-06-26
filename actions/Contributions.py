@@ -476,6 +476,13 @@ class ContributionsActions(ActionBase):
                 def label_month_part(lbl):
                     return lbl.split(" (")[0] if lbl else ""
 
+                def find_matching_label(key, labels):
+                    for lbl in labels:
+                        log.info(f"[MY DEBUG] lbl: *{lbl}*, label_month_part: *{label_month_part(lbl)}*, selected_month_key: *{selected_month_key}*")
+                        if label_month_part(lbl) == key:
+                            return lbl
+                    return None
+
                 # Pull the selected month from the settings
                 selected_month_key = self.get_settings().get("selected_month", None)
                 log.info(f"[MY DEBUG] selected_month_key: {selected_month_key}")
@@ -495,67 +502,27 @@ class ContributionsActions(ActionBase):
                     )
 
                     if selected_month_key:
-                        for lbl in bimonthly_labels:
-                            log.info(f"[MY DEBUG] lbl: *{lbl}*, label_month_part: *{label_month_part(lbl)}*, selected_month_key: *{selected_month_key}*")
-                            if label_month_part(lbl) == selected_month_key:
-                                log.info("[MY DEBUG] Matched")
-                                selected_label = lbl
-                                break
+                        selected_label = find_matching_label(selected_month_key, bimonthly_labels)
 
                     log.info(f"[App was created] Selected label: {selected_label}")
 
                     if selected_label:
                         self.display_month_row.set_value(selected_label)
                     else:
-                        selected_label = first_with_data[0]
+                        selected_label = first_with_data[0] if first_with_data else bimonthly_labels[0]
                         self.display_month_row.set_value(selected_label)
                 else:
                     # If the selected_month is in the settings then loop over the Month Period dropdown options and set the selected_label
                     if selected_month_key:
-                        for lbl in bimonthly_labels:
-                            log.info(f"[MY DEBUG] lbl: *{lbl}*, label_month_part: *{label_month_part(lbl)}*, selected_month_key: *{selected_month_key}*")
-                            if label_month_part(lbl) == selected_month_key:
-                                log.info("[MY DEBUG] Matched")
-                                selected_label = lbl
-                                break
+                        selected_label = find_matching_label(selected_month_key, bimonthly_labels)
 
                     if not selected_label:
                         log.info("[MY DEBUG] No match found")
-                        selected_label = first_with_data[0]
-
-
-
-                    # if current_items is None or list(current_items) != list(bimonthly_labels):
-                    #     if month_key:
-                    #         for lbl in bimonthly_labels:
-                    #             if label_month_part(lbl) == month_key:
-                    #                 selected_label = lbl
-                    #                 break
-
-                    #     log.info(f"[DEBUG] Populating ComboRow with labels: {bimonthly_labels}, selected_label: {selected_label}")
-                    #     self.display_month_row.populate(
-                    #         bimonthly_labels,
-                    #         selected_item=selected_label,
-                    #         update_settings=False,
-                    #         trigger_callback=False
-                    #     )
-                    #     # Save only the month key
-                    #     self.get_settings()["selected_month"] = label_month_part(selected_label)
-
-
-                    # else:
-                    #     if month_key:
-                    #         for lbl in bimonthly_labels:
-                    #             if label_month_part(lbl) == month_key:
-                    #                 selected_label = lbl
-                    #                 break
+                        selected_label = first_with_data[0] if first_with_data else bimonthly_labels[0]
 
                 log.info(f"[DEBUG] Final selected_label: {selected_label}")
 
                 # Ensure img_path and count match the actual selected label
-                if selected_label not in bimonthly_labels:
-                    log.info(f"[DEBUG] selected_label '{selected_label}' not in bimonthly_labels, defaulting to first.")
-                    selected_label = bimonthly_labels[0]
                 idx = bimonthly_labels.index(selected_label)
                 img_path = bimonthly_images[idx]
                 count = bimonthly_counts[idx]
