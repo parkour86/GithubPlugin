@@ -100,10 +100,11 @@ class ContributionsActions(ActionBase):
             # fallback to all possible periods if not yet populated
             bimonthly_ranges = self.get_bimonthly_ranges(datetime.now())
             month_labels = [f"{start.strftime('%b')}-{end.strftime('%b')}" for start, end in bimonthly_ranges]
+        selected_month = settings.get("display_contribution_month", "")
         self.display_month_row = ComboRow(
             action_core=self,
             var_name="display_contribution_month",
-            default_value="",  # No default selected
+            default_value=selected_month,  # Use the value from settings
             items=month_labels,
             title="Display Contribution Period",
             on_change=self.on_display_month_changed,
@@ -194,13 +195,6 @@ class ContributionsActions(ActionBase):
             self.set_background_color(color=[0, 0, 0, 0], update=True)
         elif status == "error":
             self.set_background_color(color=[255, 255, 255, 255], update=True)
-
-    def refresh_ui_from_dropdown(self):
-        # Get the current value from the ComboRow and update the UI
-        if hasattr(self, "display_month_row") and self.display_month_row is not None:
-            value = self.display_month_row.get_value() if hasattr(self.display_month_row, "get_value") else None
-            if value:
-                self.on_display_month_changed(self.display_month_row, value, None)
 
     def on_show_top_label_changed(self, widget, *args):
         settings = self.get_settings()
