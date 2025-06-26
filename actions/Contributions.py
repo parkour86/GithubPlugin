@@ -525,12 +525,6 @@ class ContributionsActions(ActionBase):
                                 selected_label = lbl
                                 break
 
-                    if selected_label:
-                        self.display_month_row.set_value(selected_label)
-                    else:
-                        selected_label = first_with_data[0]
-                        self.display_month_row.set_value(selected_label)
-
 
 
 
