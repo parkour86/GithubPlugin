@@ -32,10 +32,6 @@ class ContributionsActions(ActionBase):
         self._refresh_timer_id = None  # For periodic refresh
 
     def on_ready(self) -> None:
-        from gi.repository import GLib
-        GLib.idle_add(self._after_ui_loaded)
-
-    def _after_ui_loaded(self):
         settings = self.get_settings()
         github_token = settings.get("github_token", "")
         github_user = settings.get("github_user", "")
@@ -47,11 +43,11 @@ class ContributionsActions(ActionBase):
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
             self.set_top_label("\nConfigure\nGithub\nPlugin", color=[255, 100, 100], outline_width=1, font_size=17)
         self.start_refresh_timer()
-        return False  # Ensure this only runs once
 
     def on_key_down(self) -> None:
         settings = self.get_settings()
         github_user = settings.get("github_user", "")
+        self.fetch_and_display_contributions()
         if github_user:
             import webbrowser
             url = f"https://github.com/{github_user}"
