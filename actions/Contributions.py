@@ -487,30 +487,48 @@ class ContributionsActions(ActionBase):
                     log.info(f"[DEBUG] Current month_key from settings: {month_key}")
                     log.info(f"[DEBUG] Current ComboRow items: {current_items}")
 
-                    if current_items is None or list(current_items) != list(bimonthly_labels):
-                        if month_key:
-                            for lbl in bimonthly_labels:
-                                if label_month_part(lbl) == month_key:
-                                    selected_label = lbl
-                                    break
-                        # Explicitly set the ComboRow's selected value to match the config
-                        if hasattr(self.display_month_row, "set_value"):
-                            self.display_month_row.set_value(selected_label)
-                        log.info(f"[DEBUG] Populating ComboRow with labels: {bimonthly_labels}, selected_label: {selected_label}")
-                        self.display_month_row.populate(
-                            bimonthly_labels,
-                            selected_item=selected_label,
-                            update_settings=False,
-                            trigger_callback=False
-                        )
-                        # Save only the month key
-                        self.get_settings()["selected_month"] = label_month_part(selected_label)
-                    else:
-                        if month_key:
-                            for lbl in bimonthly_labels:
-                                if label_month_part(lbl) == month_key:
-                                    selected_label = lbl
-                                    break
+                    # Always populate the ComboRow to ensure it's synced
+                    self.display_month_row.populate(
+                        bimonthly_labels,
+                        selected_item=None,  # initially unset
+                        update_settings=False,
+                        trigger_callback=False
+                    )
+
+                    # Try to match stored month key to actual label
+                    if month_key:
+                        for lbl in bimonthly_labels:
+                            if label_month_part(lbl) == month_key:
+                                selected_label = lbl
+                                break
+
+                    # Set the dropdown visually to the selected label
+                    self.display_month_row.set_value(selected_label)
+
+                    # if current_items is None or list(current_items) != list(bimonthly_labels):
+                    #     if month_key:
+                    #         for lbl in bimonthly_labels:
+                    #             if label_month_part(lbl) == month_key:
+                    #                 selected_label = lbl
+                    #                 break
+
+                    #     log.info(f"[DEBUG] Populating ComboRow with labels: {bimonthly_labels}, selected_label: {selected_label}")
+                    #     self.display_month_row.populate(
+                    #         bimonthly_labels,
+                    #         selected_item=selected_label,
+                    #         update_settings=False,
+                    #         trigger_callback=False
+                    #     )
+                    #     # Save only the month key
+                    #     self.get_settings()["selected_month"] = label_month_part(selected_label)
+
+
+                    # else:
+                    #     if month_key:
+                    #         for lbl in bimonthly_labels:
+                    #             if label_month_part(lbl) == month_key:
+                    #                 selected_label = lbl
+                    #                 break
 
                 log.info(f"[DEBUG] Final selected_label: {selected_label}")
 
