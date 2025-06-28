@@ -399,7 +399,13 @@ class ContributionsActions(ActionBase):
                 bimonthly_labels = cache["labels"]
                 bimonthly_images = cache["images"]
                 bimonthly_counts = cache["counts"]
-                if last_date_str is not None:
+                # Invalidate cache if selected_month_key is missing from bimonthly_labels
+                selected_month_key = self.get_settings().get("selected_month", None)
+                label_month_parts = [lbl.split(" (")[0] for lbl in bimonthly_labels]
+                if selected_month_key and selected_month_key not in label_month_parts:
+                    log.info("[CACHE] selected_month_key missing from bimonthly_labels, invalidating cache.")
+                    cache_valid = False
+                elif last_date_str is not None:
                     last_date = datetime.strptime(last_date_str, "%Y-%m-%d")
                 else:
                     # Cache is invalid or corrupted, force a fresh fetch
