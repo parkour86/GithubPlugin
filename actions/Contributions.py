@@ -430,13 +430,17 @@ class ContributionsActions(ActionBase):
 
                 try:
                     log.info(f"[API] Making GitHub contributions API call for button with refresh_rate: {refresh_rate}")
-                    response = requests.post(
-                        "https://api.github.com/graphql",
-                        json={"query": query, "variables": {"login": github_user}},
-                        headers=headers,
-                        timeout=15
-                    )
-                    status = response.status_code
+                    # response = requests.post(
+                    #     "https://api.github.com/graphql",
+                    #     json={"query": query, "variables": {"login": github_user}},
+                    #     headers=headers,
+                    #     timeout=15
+                    # )
+                    # status = response.status_code
+                    import json
+                    with open(os.path.join(self.plugin_base.PATH, "response.json"), "r") as f:
+                        data = json.load(f)
+                    status = 200
 
                     if status != 200:
                         self.clear_labels("error")
@@ -446,7 +450,7 @@ class ContributionsActions(ActionBase):
                         self.set_background_color(color=[255, 255, 255, 255], update=True)
                         return
 
-                    data = response.json()
+                    #data = response.json()
                     if "data" not in data or data["data"]["user"] is None:
                         self.clear_labels("error")
                         self.set_top_label("\nUser\nNot Found", **kwargs)
@@ -572,13 +576,36 @@ class ContributionsActions(ActionBase):
                     selected_label = first_with_data[0] if first_with_data else bimonthly_labels[0]
                     self.display_month_row.set_value(selected_label)
             else:
-                # If the selected_month is in the settings then loop over the Month Period dropdown options and set the selected_label
+                # If the selected_month is saved in the settings then loop over the Month Period dropdown options and set the selected_label
                 if selected_month_key:
                     selected_label = find_matching_label(selected_month_key, bimonthly_labels)
 
                 if not selected_label:
                     log.info("[MY DEBUG] No match found")
-                    selected_label = first_with_data[0] if first_with_data else bimonthly_labels[0]
+                    rollover_found = False
+                    # Try to detect rollover: e.g., if JUL-AUG is gone, look for AUG-SEP
+                    if selected_month_key:  # Only try rollover if we have a previous selection
+                        try:
+                            start, end = selected_month_key.split('-')
+                            months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+                            end_idx = months.index(end.upper())
+                            next_start_idx = (end_idx + 1) % 12
+                            next_end_idx = (end_idx + 2) % 12
+                            next_period = f"{months[next_start_idx]}-{months[next_end_idx]}"
+                            for lbl in bimonthly_labels:
+                                if lbl.startswith(next_period):
+                                    selected_label = lbl
+                                    settings["selected_month"] = next_period
+                                    self.set_settings(settings)
+                                    log.info(f"[ROLLOVER] Detected rollover. Updated selected_month to {next_period}")
+                                    rollover_found = True
+                                    break
+                        except Exception as e:
+                            log.warning(f"[ROLLOVER] Failed to parse or find rollover period: {e}")
+                    if not rollover_found or not selected_label:
+                        selected_label = first_with_data[0] if first_with_data else bimonthly_labels[0]
+                        settings["selected_month"] = selected_label.split(" (")[0]
+                        self.set_settings(settings)
 
             log.info(f"[DEBUG] Final selected_label: {selected_label}")
 
