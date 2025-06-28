@@ -333,12 +333,11 @@ class ContributionsActions(ActionBase):
         else:
             return "#a3d9a5"  # light muted green
 
-    def save_contributions_image(self, cell_map, sorted_weeks, quarter_idx, plugin_path):
+    def save_contributions_image(self, cell_map, sorted_weeks, quarter_idx, plugin_path, period_start, period_end):
         cell_size = 12
         padding = 0  # ← Set padding to 0 to remove spacing
         height = 7 * cell_size + (7 - 1) * padding
         num_weeks = len(sorted_weeks)
-        #num_cols = max(10, num_weeks)
         num_cols = num_weeks
 
         # Make background fully white
@@ -351,8 +350,12 @@ class ContributionsActions(ActionBase):
                     real_w = sorted_weeks[local_w]
                     key = (real_w, d)
                     if key in cell_map:
-                        _, count = cell_map[key]
-                        color = self.get_color(count)
+                        date_str, count = cell_map[key]
+                        date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+                        if period_start <= date_obj <= period_end:
+                            color = self.get_color(count)
+                        else:
+                            color = "white"
                     else:
                         color = "white"
                 else:
@@ -364,13 +367,6 @@ class ContributionsActions(ActionBase):
 
                 # Fill the cell (white or colored)
                 draw.rectangle(box, fill=color)
-
-                # Only draw border if it's an active (green) cell
-                # if color.lower() not in ["#3d444d", "white"]:
-                #     draw.rectangle(box, outline="black", width=1)
-
-                # Draw border if it's an active (green) cell
-                #if color.lower() in ["#3d444d"]:
                 draw.rectangle(box, outline="#777777", width=1)
 
         img_path = os.path.join(plugin_path, f"contributions_img{quarter_idx+1}.png")
@@ -538,7 +534,10 @@ class ContributionsActions(ActionBase):
                         bimonthly_labels.append(label)
                         log.info(f"[DEBUG] Built label: {label} with count: {count} for idx: {idx}")
                         if week_indices:
-                            img_path = self.save_contributions_image(cell_map, sorted(week_indices), idx, plugin_path)
+                            img_path = self.save_contributions_image(
+                                cell_map, sorted(week_indices), idx, plugin_path,
+                                period_start=start, period_end=end
+                            )
                             bimonthly_images.append(img_path)
                         else:
                             bimonthly_images.append(None)
