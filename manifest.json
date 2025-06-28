@@ -4,10 +4,10 @@
   "id": "com_codeNinja_GithubPlugin",
   "name": "Github Plugin",
   "descriptions": {
-    "en_US": "A productivity plugin for StreamController that integrates with GitHub. It allows you to monitor pull requests for any repository, view their status, and quickly access the PR page. It also displays your GitHub contributions graph (activity graph) with flexible configuration. Configure your GitHub access token and repository URL to get started. The plugin displays the number of open pull requests, their CI status, and your recent contribution activity, with periodic refresh support."
+    "en_US": "A plugin to monitor GitHub pull requests, CI status, and your contributions graph. Configure your access token and repository to get started. View open PRs, their status, and recent activity with periodic refresh."
   },
   "short-descriptions": {
-    "en_US": "Plugin to display GitHub pull requests, CI status, and contributions graph."
+    "en_US": "Show GitHub PRs, CI status & contributions."
   },
   "tags": [
     "Productivity",
@@ -20,6 +20,6 @@
   ],
   "minimum-app-version": "1.0.0",
   "app-version": "1.1.1-alpha",
-  "description": "A productivity plugin for StreamController that integrates with GitHub. It allows you to monitor pull requests for any repository, view their status, and quickly access the PR page. It also displays your GitHub contributions graph (activity graph) with flexible configuration. Configure your GitHub access token and repository URL to get started. The plugin displays the number of open pull requests, their CI status, and your recent contribution activity, with periodic refresh support.",
-  "short-description": "Plugin to display GitHub pull requests, CI status, and contributions graph."
+  "description": "A plugin to monitor GitHub pull requests, CI status, and your contributions graph. Configure your access token and repository to get started. View open PRs, their status, and recent activity with periodic refresh.",
+  "short-description": "Show GitHub PRs, CI status & contributions."
 }
