@@ -333,39 +333,45 @@ class ContributionsActions(ActionBase):
         else:
             return "#a3d9a5"  # light muted green
 
-    def save_contributions_image(self, cell_map, sorted_weeks, quarter_idx, plugin_path, period_start, period_end):
+    def save_contributions_image(self, cell_map, quarter_idx, plugin_path, period_start, period_end):
+        """
+        Draws a contribution image for the given period.
+        Always shows all weeks (Sunday to Saturday) covering the period.
+        Out-of-period days are colored white.
+        """
         cell_size = 12
-        padding = 0  # ← Set padding to 0 to remove spacing
+        padding = 0
+        # Calculate the first Sunday on/before period_start and last Saturday on/after period_end
+        first_sunday = period_start - timedelta(days=period_start.weekday() + 1) if period_start.weekday() != 6 else period_start
+        last_saturday = period_end + timedelta(days=(5 - period_end.weekday()) % 7 + 1) if period_end.weekday() != 5 else period_end
+        # Build all week start dates
+        weeks = []
+        current = first_sunday
+        while current <= last_saturday:
+            weeks.append(current)
+            current += timedelta(days=7)
+        num_cols = len(weeks)
         height = 7 * cell_size + (7 - 1) * padding
-        num_weeks = len(sorted_weeks)
-        num_cols = num_weeks
 
-        # Make background fully white
         img = Image.new("RGB", (num_cols * (cell_size + padding), height), "white")
         draw = ImageDraw.Draw(img)
 
-        for local_w in range(num_cols):
-            for d in range(7):
-                if local_w < num_weeks:
-                    real_w = sorted_weeks[local_w]
-                    key = (real_w, d)
-                    if key in cell_map:
-                        date_str, count = cell_map[key]
-                        date_obj = datetime.strptime(date_str, "%Y-%m-%d")
-                        if period_start <= date_obj <= period_end:
-                            color = self.get_color(count)
-                        else:
-                            color = "white"
-                    else:
-                        color = "white"
-                else:
-                    color = "white"
+        # Build a date->count map for fast lookup
+        date_to_count = {}
+        for key, (date_str, count) in cell_map.items():
+            date_to_count[date_str] = count
 
-                x = local_w * (cell_size + padding)
+        for col, week_start in enumerate(weeks):
+            for d in range(7):
+                day = week_start + timedelta(days=d)
+                x = col * (cell_size + padding)
                 y = d * (cell_size + padding)
                 box = [x, y, x + cell_size - 1, y + cell_size - 1]
-
-                # Fill the cell (white or colored)
+                if period_start <= day <= period_end:
+                    count = date_to_count.get(day.strftime("%Y-%m-%d"), 0)
+                    color = self.get_color(count)
+                else:
+                    color = "white"
                 draw.rectangle(box, fill=color)
                 draw.rectangle(box, outline="#777777", width=1)
 
@@ -517,30 +523,25 @@ class ContributionsActions(ActionBase):
                     for idx, (start, end) in enumerate(bimonthly_ranges):
                         count = 0
                         cell_map = {}
-                        week_indices = set()
-                        # Select weeks for this period from the globally padded weeks_data
-                        period_weeks = [w for w in weeks_data if start <= datetime.strptime(w["contributionDays"][0]["date"], "%Y-%m-%d") <= end]
-                        for week_idx, week in enumerate(period_weeks):
-                            for day_idx, day in enumerate(week["contributionDays"]):
+                        # Build a date->count map for the period
+                        for week in weeks_data:
+                            for day in week["contributionDays"]:
                                 date_str = day["date"]
-                                c = day["contributionCount"]
                                 date_obj = datetime.strptime(date_str, "%Y-%m-%d")
                                 if start <= date_obj <= end:
-                                    cell_map[(week_idx, day_idx)] = (date_str, c)
-                                    week_indices.add(week_idx)
+                                    c = day["contributionCount"]
+                                    cell_map[(date_obj.isocalendar()[1], date_obj.weekday())] = (date_str, c)
                                     count += c
                         bimonthly_counts.append(count)
                         label = f"{start.strftime('%b').upper()}-{end.strftime('%b').upper()} ({count})"
                         bimonthly_labels.append(label)
                         log.info(f"[DEBUG] Built label: {label} with count: {count} for idx: {idx}")
-                        if week_indices:
-                            img_path = self.save_contributions_image(
-                                cell_map, sorted(week_indices), idx, plugin_path,
-                                period_start=start, period_end=end
-                            )
-                            bimonthly_images.append(img_path)
-                        else:
-                            bimonthly_images.append(None)
+                        # Always generate the image for the full period, even if all zeros
+                        img_path = self.save_contributions_image(
+                            cell_map, idx, plugin_path,
+                            period_start=start, period_end=end
+                        )
+                        bimonthly_images.append(img_path)
 
                     # Save to cache
                     cache_key = (github_user, github_token, last_date_str)
