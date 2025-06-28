@@ -592,7 +592,9 @@ class ContributionsActions(ActionBase):
                             next_start_idx = (end_idx + 1) % 12
                             next_end_idx = (end_idx + 2) % 12
                             next_period = f"{months[next_start_idx]}-{months[next_end_idx]}"
+                            log.info(f"[MY DEBUG] Next period: {next_period}")
                             for lbl in bimonthly_labels:
+                                log.info(f"[MY DEBUG] Checking label: {lbl}")
                                 if lbl.startswith(next_period):
                                     selected_label = lbl
                                     settings["selected_month"] = next_period
