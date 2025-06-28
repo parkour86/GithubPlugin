@@ -7,7 +7,7 @@ from src.backend.PluginManager.ActionHolder import ActionHolder
 import os
 from loguru import logger as log
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from PIL import Image, ImageDraw
 from dateutil.relativedelta import relativedelta
 
@@ -27,6 +27,37 @@ class ContributionsActions(ActionBase):
     Action for displaying GitHub contributions by quarter.
     Fetches contribution data using the GitHub GraphQL API and displays summary stats.
     """
+
+    def pad_weeks(self, weeks, start_date, end_date):
+        """
+        Ensure all weeks between start_date and end_date are present in the weeks list.
+        If a week is missing, add it with all contributionCounts set to 0.
+        """
+        # Convert string dates to datetime
+        start = datetime.strptime(start_date, "%Y-%m-%d")
+        end = datetime.strptime(end_date, "%Y-%m-%d")
+        # Build a set of all week start dates in your data
+        week_starts = set(datetime.strptime(week['contributionDays'][0]['date'], "%Y-%m-%d") for week in weeks)
+        # Generate all week start dates in the range
+        all_week_starts = []
+        current = start
+        while current <= end:
+            all_week_starts.append(current)
+            current += timedelta(days=7)
+        # For each missing week, add a week with all 0s
+        for week_start in all_week_starts:
+            if week_start not in week_starts:
+                week = {
+                    "contributionDays": [
+                        {"contributionCount": 0, "date": (week_start + timedelta(days=i)).strftime("%Y-%m-%d")}
+                        for i in range(7)
+                        if (week_start + timedelta(days=i)) <= end
+                    ]
+                }
+                weeks.append(week)
+        # Sort weeks by their first day
+        weeks.sort(key=lambda w: w['contributionDays'][0]['date'])
+        return weeks
 
     # ---- CLASS-LEVEL CACHE ----
     # Keyed by (github_user, github_token, last_date_str)
@@ -485,7 +516,13 @@ class ContributionsActions(ActionBase):
                         count = 0
                         cell_map = {}
                         week_indices = set()
-                        for week_idx, week in enumerate(weeks_data):
+                        # Pad weeks for this period
+                        start_str = start.strftime("%Y-%m-%d")
+                        end_str = end.strftime("%Y-%m-%d")
+                        period_weeks = [w for w in weeks_data if start <= datetime.strptime(w["contributionDays"][0]["date"], "%Y-%m-%d") <= end]
+                        period_weeks = self.pad_weeks(period_weeks, start_str, end_str)
+                        # Use the padded weeks for image generation
+                        for week_idx, week in enumerate(period_weeks):
                             for day_idx, day in enumerate(week["contributionDays"]):
                                 date_str = day["date"]
                                 c = day["contributionCount"]
