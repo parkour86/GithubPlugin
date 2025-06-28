@@ -343,7 +343,7 @@ class ContributionsActions(ActionBase):
         padding = 0
         # Calculate the first Sunday on/before period_start and last Saturday on/after period_end
         first_sunday = period_start - timedelta(days=period_start.weekday() + 1) if period_start.weekday() != 6 else period_start
-        last_saturday = period_end + timedelta(days=(5 - period_end.weekday()) % 7 + 1) if period_end.weekday() != 5 else period_end
+        last_saturday = period_end + timedelta(days=(5 - period_end.weekday()) % 7)
         # Build all week start dates
         weeks = []
         current = first_sunday
