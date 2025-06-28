@@ -503,6 +503,12 @@ class ContributionsActions(ActionBase):
                         self.set_background_color(color=[255, 255, 255, 255], update=True)
                         return
 
+                    # Pad the entire weeks_data once to cover the full range
+                    all_dates = [day["date"] for week in weeks_data for day in week["contributionDays"]]
+                    min_date = min(all_dates)
+                    max_date = max(all_dates)
+                    weeks_data = self.pad_weeks(weeks_data, min_date, max_date)
+
                     last_week = weeks_data[-1]
                     last_day = last_week["contributionDays"][-1]["date"]
                     last_date = datetime.strptime(last_day, "%Y-%m-%d")
@@ -516,12 +522,8 @@ class ContributionsActions(ActionBase):
                         count = 0
                         cell_map = {}
                         week_indices = set()
-                        # Pad weeks for this period
-                        start_str = start.strftime("%Y-%m-%d")
-                        end_str = end.strftime("%Y-%m-%d")
+                        # Select weeks for this period from the globally padded weeks_data
                         period_weeks = [w for w in weeks_data if start <= datetime.strptime(w["contributionDays"][0]["date"], "%Y-%m-%d") <= end]
-                        period_weeks = self.pad_weeks(period_weeks, start_str, end_str)
-                        # Use the padded weeks for image generation
                         for week_idx, week in enumerate(period_weeks):
                             for day_idx, day in enumerate(week["contributionDays"]):
                                 date_str = day["date"]
