@@ -438,7 +438,7 @@ class ContributionsActions(ActionBase):
                     # )
                     # status = response.status_code
                     import json
-                    with open(os.path.join(self.plugin_base.PATH, "response.json"), "r") as f:
+                    with open(os.path.join(self.plugin_base.PATH, "actions/response.json"), "r") as f:
                         data = json.load(f)
                     status = 200
 
