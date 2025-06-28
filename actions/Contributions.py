@@ -20,11 +20,19 @@ from gi.repository import Gtk, Adw
 # Import ComboRow for dropdowns
 from GtkHelper.GenerativeUI.ComboRow import ComboRow
 
+import time
+
 class ContributionsActions(ActionBase):
     """
     Action for displaying GitHub contributions by quarter.
     Fetches contribution data using the GitHub GraphQL API and displays summary stats.
     """
+
+    # ---- CLASS-LEVEL CACHE ----
+    # Keyed by (github_user, github_token, last_date_str)
+    _contributions_cache = {}
+    _cache_timestamp = None
+    _cache_params = None
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._token_change_timeout_id = None
@@ -38,7 +46,6 @@ class ContributionsActions(ActionBase):
         selected_month = settings.get("selected_month", "")
         log.info(f"[MY DEBUG] *{selected_month}*")
         if github_token and github_user:
-            #self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
             self.fetch_and_display_contributions()
         else:
             self.clear_labels("error")
@@ -359,211 +366,262 @@ class ContributionsActions(ActionBase):
                 self.set_media(media_path=default_media, size=0.9)
                 return
 
-            query = """
-            query($login: String!) {
-              user(login: $login) {
-                contributionsCollection {
-                  contributionCalendar {
-                    weeks {
-                      contributionDays {
-                        contributionCount
-                        date
+            # ---- CACHE LOGIC ----
+            cache_key = None
+            last_date_str = None
+            cache_valid = False
+            refresh_rate = settings.get("refresh_rate", "0")
+            try:
+                refresh_rate = int(refresh_rate)
+            except Exception:
+                refresh_rate = 0
+
+            # We'll determine last_date after API call or from cache
+            # But first, check if we have a cache for this user/token/period
+            cache_params = ContributionsActions._cache_params
+            cache_timestamp = ContributionsActions._cache_timestamp
+            now = time.time()
+
+            # If cache_params exist, check if they match
+            if cache_params is not None:
+                cached_user, cached_token, cached_last_date_str = cache_params
+                if cached_user == github_user and cached_token == github_token:
+                    # If refresh_rate is 0, always refresh
+                    if refresh_rate > 0 and cache_timestamp is not None and (now - cache_timestamp) < refresh_rate * 3600:
+                        cache_key = (github_user, github_token, cached_last_date_str)
+                        if cache_key in ContributionsActions._contributions_cache:
+                            cache_valid = True
+                            last_date_str = cached_last_date_str
+
+            if cache_valid:
+                log.info("[CACHE] Using cached contributions data and images.")
+                cache = ContributionsActions._contributions_cache[cache_key]
+                bimonthly_labels = cache["labels"]
+                bimonthly_images = cache["images"]
+                bimonthly_counts = cache["counts"]
+                if last_date_str is not None:
+                    last_date = datetime.strptime(last_date_str, "%Y-%m-%d")
+                else:
+                    # Cache is invalid or corrupted, force a fresh fetch
+                    log.warning("[CACHE] last_date_str is None, forcing fresh fetch.")
+                    cache_valid = False
+            else:
+                # --- API CALL ---
+                query = """
+                query($login: String!) {
+                  user(login: $login) {
+                    contributionsCollection {
+                      contributionCalendar {
+                        weeks {
+                          contributionDays {
+                            contributionCount
+                            date
+                          }
+                        }
                       }
                     }
                   }
                 }
-              }
-            }
-            """
+                """
 
-            headers = {
-                "Authorization": f"Bearer {github_token}"
-            }
+                headers = {
+                    "Authorization": f"Bearer {github_token}"
+                }
 
-            try:
-                response = requests.post(
-                    "https://api.github.com/graphql",
-                    json={"query": query, "variables": {"login": github_user}},
-                    headers=headers,
-                    timeout=15
-                )
-                status = response.status_code
-
-                if status != 200:
-                    self.clear_labels("error")
-                    label = "\nInvalid\nToken" if status == 401 else "\nAPI\nError"
-                    self.set_top_label(label, **kwargs)
-                    self.set_media(media_path=default_media, size=0.9)
-                    self.set_background_color(color=[255, 255, 255, 255], update=True)
-                    return
-
-                data = response.json()
-                if "data" not in data or data["data"]["user"] is None:
-                    self.clear_labels("error")
-                    self.set_top_label("\nUser\nNot Found", **kwargs)
-                    self.set_media(media_path=default_media, size=0.9)
-                    self.set_background_color(color=[255, 255, 255, 255], update=True)
-                    return
-
-                weeks_data = data["data"]["user"]["contributionsCollection"]["contributionCalendar"]["weeks"]
-                if not weeks_data:
-                    self.clear_labels("error")
-                    self.set_top_label("\nNo\nData", **kwargs)
-                    self.set_media(media_path=default_media, size=0.9)
-                    self.set_background_color(color=[255, 255, 255, 255], update=True)
-                    return
-
-                last_week = weeks_data[-1]
-                last_day = last_week["contributionDays"][-1]["date"]
-                last_date = datetime.strptime(last_day, "%Y-%m-%d")
-
-                bimonthly_ranges = self.get_bimonthly_ranges(last_date)
-                bimonthly_counts, bimonthly_images, bimonthly_labels = [], [], []
-                plugin_path = self.plugin_base.PATH
-
-                for idx, (start, end) in enumerate(bimonthly_ranges):
-                    count = 0
-                    cell_map = {}
-                    week_indices = set()
-                    for week_idx, week in enumerate(weeks_data):
-                        for day_idx, day in enumerate(week["contributionDays"]):
-                            date_str = day["date"]
-                            c = day["contributionCount"]
-                            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
-                            if start <= date_obj <= end:
-                                cell_map[(week_idx, day_idx)] = (date_str, c)
-                                week_indices.add(week_idx)
-                                count += c
-                    bimonthly_counts.append(count)
-                    label = f"{start.strftime('%b').upper()}-{end.strftime('%b').upper()} ({count})"
-                    bimonthly_labels.append(label)
-                    log.info(f"[DEBUG] Built label: {label} with count: {count} for idx: {idx}")
-                    if week_indices:
-                        img_path = self.save_contributions_image(cell_map, sorted(week_indices), idx, plugin_path)
-                        bimonthly_images.append(img_path)
-                    else:
-                        bimonthly_images.append(None)
-
-                self._quarter_labels = bimonthly_labels
-                self._quarter_images = bimonthly_images
-                self._quarter_counts = bimonthly_counts
-
-                log.info(f"[DEBUG] All bimonthly_labels: {bimonthly_labels}")
-                log.info(f"[DEBUG] All bimonthly_counts: {bimonthly_counts}")
-
-                first_with_data = next(
-                    ((lbl, img, cnt) for lbl, img, cnt in zip(bimonthly_labels, bimonthly_images, bimonthly_counts) if cnt > 0),
-                    (None, None, None)
-                )
-
-                if first_with_data[0] is None:
-                    log.info("[DEBUG] No data found for any period, aborting.")
-                    self.clear_labels("error")
-                    self.set_top_label("\nActivity\nLog\nEmpty", **kwargs)
-                    self.set_media(media_path=default_media, size=0.9)
-                    self.set_background_color(color=[255, 255, 255, 255], update=True)
-                    return
-
-                # Start clean
-                self.clear_labels("success")
-
-                def label_month_part(lbl):
-                    return lbl.split(" (")[0] if lbl else ""
-
-                def find_matching_label(key, labels):
-                    for lbl in labels:
-                        log.info(f"[MY DEBUG] lbl: *{lbl}*, label_month_part: *{label_month_part(lbl)}*, selected_month_key: *{selected_month_key}*")
-                        if label_month_part(lbl) == key:
-                            return lbl
-                    return None
-
-                # Pull the selected month from the settings
-                selected_month_key = self.get_settings().get("selected_month", None)
-                log.info(f"[MY DEBUG] selected_month_key: {selected_month_key}")
-
-                selected_label = None
-                # Jump into this loop if the button was just created
-                if hasattr(self, "display_month_row") and self.display_month_row is not None:
-                    # Pull the selected month from the settings
-                    #month_key = self.get_settings().get("selected_month", None)
-
-                    # Populate the display_month_row with the bimonthly_labels
-                    self.display_month_row.populate(
-                        bimonthly_labels,
-                        selected_item=None,
-                        update_settings=False,
-                        trigger_callback=False
+                try:
+                    response = requests.post(
+                        "https://api.github.com/graphql",
+                        json={"query": query, "variables": {"login": github_user}},
+                        headers=headers,
+                        timeout=15
                     )
+                    status = response.status_code
 
-                    if selected_month_key:
-                        selected_label = find_matching_label(selected_month_key, bimonthly_labels)
+                    if status != 200:
+                        self.clear_labels("error")
+                        label = "\nInvalid\nToken" if status == 401 else "\nAPI\nError"
+                        self.set_top_label(label, **kwargs)
+                        self.set_media(media_path=default_media, size=0.9)
+                        self.set_background_color(color=[255, 255, 255, 255], update=True)
+                        return
 
-                    log.info(f"[App was created] Selected label: {selected_label}")
+                    data = response.json()
+                    if "data" not in data or data["data"]["user"] is None:
+                        self.clear_labels("error")
+                        self.set_top_label("\nUser\nNot Found", **kwargs)
+                        self.set_media(media_path=default_media, size=0.9)
+                        self.set_background_color(color=[255, 255, 255, 255], update=True)
+                        return
 
-                    if selected_label:
-                        self.display_month_row.set_value(selected_label)
-                    else:
-                        selected_label = first_with_data[0] if first_with_data else bimonthly_labels[0]
-                        self.display_month_row.set_value(selected_label)
-                else:
-                    # If the selected_month is in the settings then loop over the Month Period dropdown options and set the selected_label
-                    if selected_month_key:
-                        selected_label = find_matching_label(selected_month_key, bimonthly_labels)
+                    weeks_data = data["data"]["user"]["contributionsCollection"]["contributionCalendar"]["weeks"]
+                    if not weeks_data:
+                        self.clear_labels("error")
+                        self.set_top_label("\nNo\nData", **kwargs)
+                        self.set_media(media_path=default_media, size=0.9)
+                        self.set_background_color(color=[255, 255, 255, 255], update=True)
+                        return
 
-                    if not selected_label:
-                        log.info("[MY DEBUG] No match found")
-                        selected_label = first_with_data[0] if first_with_data else bimonthly_labels[0]
+                    last_week = weeks_data[-1]
+                    last_day = last_week["contributionDays"][-1]["date"]
+                    last_date = datetime.strptime(last_day, "%Y-%m-%d")
+                    last_date_str = last_day
 
-                log.info(f"[DEBUG] Final selected_label: {selected_label}")
+                    bimonthly_ranges = self.get_bimonthly_ranges(last_date)
+                    bimonthly_counts, bimonthly_images, bimonthly_labels = [], [], []
+                    plugin_path = self.plugin_base.PATH
 
-                # Ensure img_path and count match the actual selected label
-                idx = bimonthly_labels.index(selected_label)
-                img_path = bimonthly_images[idx]
-                count = bimonthly_counts[idx]
-                log.info(f"[DEBUG] Using idx: {idx}, img_path: {img_path}, count: {count} for selected_label: {selected_label}")
+                    for idx, (start, end) in enumerate(bimonthly_ranges):
+                        count = 0
+                        cell_map = {}
+                        week_indices = set()
+                        for week_idx, week in enumerate(weeks_data):
+                            for day_idx, day in enumerate(week["contributionDays"]):
+                                date_str = day["date"]
+                                c = day["contributionCount"]
+                                date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+                                if start <= date_obj <= end:
+                                    cell_map[(week_idx, day_idx)] = (date_str, c)
+                                    week_indices.add(week_idx)
+                                    count += c
+                        bimonthly_counts.append(count)
+                        label = f"{start.strftime('%b').upper()}-{end.strftime('%b').upper()} ({count})"
+                        bimonthly_labels.append(label)
+                        log.info(f"[DEBUG] Built label: {label} with count: {count} for idx: {idx}")
+                        if week_indices:
+                            img_path = self.save_contributions_image(cell_map, sorted(week_indices), idx, plugin_path)
+                            bimonthly_images.append(img_path)
+                        else:
+                            bimonthly_images.append(None)
 
-                # Top label (count)
-                if self.get_settings().get("show_top_label", True):
-                    log.info(f"[DEBUG] Setting top label to count: {count}")
-                    self.set_top_label(
-                        f"{count}",
-                        color=[100, 255, 100],
-                        outline_width=4,
-                        font_size=18,
-                        font_family="cantarell"
-                    )
-                else:
-                    log.info("[DEBUG] Hiding top label")
-                    self.set_top_label(None)
+                    # Save to cache
+                    cache_key = (github_user, github_token, last_date_str)
+                    ContributionsActions._contributions_cache[cache_key] = {
+                        "labels": bimonthly_labels,
+                        "images": bimonthly_images,
+                        "counts": bimonthly_counts,
+                    }
+                    ContributionsActions._cache_timestamp = now
+                    ContributionsActions._cache_params = (github_user, github_token, last_date_str)
 
-                # Bottom label (month range)
-                if self.get_settings().get("show_bottom_label", True):
-                    log.info(f"[DEBUG] Setting bottom label to: {selected_label.split(' (')[0]}")
-                    self.set_bottom_label(
-                        selected_label.split(" (")[0],
-                        color=[100, 255, 100],
-                        outline_width=2,
-                        font_size=16,
-                        font_family="cantarell"
-                    )
-                else:
-                    log.info("[DEBUG] Hiding bottom label")
-                    self.set_bottom_label(None)
-
-                # Set contribution image
-                if img_path:
-                    log.info(f"[DEBUG] Setting media to img_path: {img_path}")
-                    self.set_media(media_path=img_path, size=0.68, valign=-.7)
-                else:
-                    log.info(f"[DEBUG] Setting media to default_media: {default_media}")
+                except Exception as e:
+                    self.clear_labels("error")
+                    self.set_top_label("\nRequest\nFailed", **kwargs)
                     self.set_media(media_path=default_media, size=0.9)
+                    self.set_background_color(color=[255, 255, 255, 255], update=True)
+                    log.error(f"[DEBUG] API Request Error:{e}", exc_info=True)
+                    return
 
-            except Exception as e:
+            # Set instance variables from cache or fresh fetch
+            self._quarter_labels = bimonthly_labels
+            self._quarter_images = bimonthly_images
+            self._quarter_counts = bimonthly_counts
+
+            log.info(f"[DEBUG] All bimonthly_labels: {bimonthly_labels}")
+            log.info(f"[DEBUG] All bimonthly_counts: {bimonthly_counts}")
+
+            first_with_data = next(
+                ((lbl, img, cnt) for lbl, img, cnt in zip(bimonthly_labels, bimonthly_images, bimonthly_counts) if cnt > 0),
+                (None, None, None)
+            )
+
+            if first_with_data[0] is None:
+                log.info("[DEBUG] No data found for any period, aborting.")
                 self.clear_labels("error")
-                self.set_top_label("\nRequest\nFailed", **kwargs)
+                self.set_top_label("\nActivity\nLog\nEmpty", **kwargs)
                 self.set_media(media_path=default_media, size=0.9)
                 self.set_background_color(color=[255, 255, 255, 255], update=True)
-                log.error(f"[DEBUG] API Request Error:{e}", exc_info=True)
+                return
+
+            # Start clean
+            self.clear_labels("success")
+
+            def label_month_part(lbl):
+                return lbl.split(" (")[0] if lbl else ""
+
+            def find_matching_label(key, labels):
+                for lbl in labels:
+                    log.info(f"[MY DEBUG] lbl: *{lbl}*, label_month_part: *{label_month_part(lbl)}*, selected_month_key: *{selected_month_key}*")
+                    if label_month_part(lbl) == key:
+                        return lbl
+                return None
+
+            # Pull the selected month from the settings
+            selected_month_key = self.get_settings().get("selected_month", None)
+            log.info(f"[MY DEBUG] selected_month_key: {selected_month_key}")
+
+            selected_label = None
+            # Jump into this loop if the button was just created
+            if hasattr(self, "display_month_row") and self.display_month_row is not None:
+                # Populate the display_month_row with the bimonthly_labels
+                self.display_month_row.populate(
+                    bimonthly_labels,
+                    selected_item=None,
+                    update_settings=False,
+                    trigger_callback=False
+                )
+
+                if selected_month_key:
+                    selected_label = find_matching_label(selected_month_key, bimonthly_labels)
+
+                log.info(f"[App was created] Selected label: {selected_label}")
+
+                if selected_label:
+                    self.display_month_row.set_value(selected_label)
+                else:
+                    selected_label = first_with_data[0] if first_with_data else bimonthly_labels[0]
+                    self.display_month_row.set_value(selected_label)
+            else:
+                # If the selected_month is in the settings then loop over the Month Period dropdown options and set the selected_label
+                if selected_month_key:
+                    selected_label = find_matching_label(selected_month_key, bimonthly_labels)
+
+                if not selected_label:
+                    log.info("[MY DEBUG] No match found")
+                    selected_label = first_with_data[0] if first_with_data else bimonthly_labels[0]
+
+            log.info(f"[DEBUG] Final selected_label: {selected_label}")
+
+            # Ensure img_path and count match the actual selected label
+            idx = bimonthly_labels.index(selected_label)
+            img_path = bimonthly_images[idx]
+            count = bimonthly_counts[idx]
+            log.info(f"[DEBUG] Using idx: {idx}, img_path: {img_path}, count: {count} for selected_label: {selected_label}")
+
+            # Top label (count)
+            if self.get_settings().get("show_top_label", True):
+                log.info(f"[DEBUG] Setting top label to count: {count}")
+                self.set_top_label(
+                    f"{count}",
+                    color=[100, 255, 100],
+                    outline_width=4,
+                    font_size=18,
+                    font_family="cantarell"
+                )
+            else:
+                log.info("[DEBUG] Hiding top label")
+                self.set_top_label(None)
+
+            # Bottom label (month range)
+            if self.get_settings().get("show_bottom_label", True):
+                log.info(f"[DEBUG] Setting bottom label to: {selected_label.split(' (')[0]}")
+                self.set_bottom_label(
+                    selected_label.split(" (")[0],
+                    color=[100, 255, 100],
+                    outline_width=2,
+                    font_size=16,
+                    font_family="cantarell"
+                )
+            else:
+                log.info("[DEBUG] Hiding bottom label")
+                self.set_bottom_label(None)
+
+            # Set contribution image
+            if img_path:
+                log.info(f"[DEBUG] Setting media to img_path: {img_path}")
+                self.set_media(media_path=img_path, size=0.68, valign=-.7)
+            else:
+                log.info(f"[DEBUG] Setting media to default_media: {default_media}")
+                self.set_media(media_path=default_media, size=0.9)
 
         except Exception as e:
             self.clear_labels("error")
