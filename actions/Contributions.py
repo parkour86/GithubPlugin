@@ -429,6 +429,7 @@ class ContributionsActions(ActionBase):
                 }
 
                 try:
+                    log.info(f"[API] Making GitHub contributions API call for button with refresh_rate: {refresh_rate}")
                     response = requests.post(
                         "https://api.github.com/graphql",
                         json={"query": query, "variables": {"login": github_user}},
