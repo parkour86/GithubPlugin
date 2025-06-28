@@ -436,17 +436,17 @@ class ContributionsActions(ActionBase):
 
                 try:
                     log.info(f"[API] Making GitHub contributions API call for button with refresh_rate: {refresh_rate}")
-                    # response = requests.post(
-                    #     "https://api.github.com/graphql",
-                    #     json={"query": query, "variables": {"login": github_user}},
-                    #     headers=headers,
-                    #     timeout=15
-                    # )
-                    # status = response.status_code
-                    import json
-                    with open(os.path.join(self.plugin_base.PATH, "actions/response.json"), "r") as f:
-                        data = json.load(f)
-                    status = 200
+                    response = requests.post(
+                        "https://api.github.com/graphql",
+                        json={"query": query, "variables": {"login": github_user}},
+                        headers=headers,
+                        timeout=15
+                    )
+                    status = response.status_code
+                    # import json
+                    # with open(os.path.join(self.plugin_base.PATH, "actions/response.json"), "r") as f:
+                    #     data = json.load(f)
+                    # status = 200
 
                     if status != 200:
                         self.clear_labels("error")
@@ -456,7 +456,7 @@ class ContributionsActions(ActionBase):
                         self.set_background_color(color=[255, 255, 255, 255], update=True)
                         return
 
-                    #data = response.json()
+                    data = response.json()
                     if "data" not in data or data["data"]["user"] is None:
                         self.clear_labels("error")
                         self.set_top_label("\nUser\nNot Found", **kwargs)
@@ -595,8 +595,8 @@ class ContributionsActions(ActionBase):
                             start, end = selected_month_key.split('-')
                             months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
                             end_idx = months.index(end.upper())
-                            next_start_idx = (end_idx + 1) % 12
-                            next_end_idx = (end_idx + 2) % 12
+                            next_start_idx = end_idx
+                            next_end_idx = (end_idx + 1) % 12
                             next_period = f"{months[next_start_idx]}-{months[next_end_idx]}"
                             log.info(f"[MY DEBUG] Next period: {next_period}")
                             for lbl in bimonthly_labels:
