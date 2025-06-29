@@ -419,8 +419,10 @@ class ContributionsActions(ActionBase):
             if cache_params is not None:
                 cached_user, cached_token, cached_last_date_str = cache_params
                 if cached_user == github_user and cached_token == github_token:
-                    # If refresh_rate is 0, always refresh
-                    if refresh_rate > 0 and cache_timestamp is not None and (now - cache_timestamp) < refresh_rate * 3600:
+                    # If refresh_rate is 0, always use cache if available (never refresh from API)
+                    # If refresh_rate > 0, use cache only if not expired
+                    if ((refresh_rate == 0 and cache_timestamp is not None) or
+                        (refresh_rate > 0 and cache_timestamp is not None and (now - cache_timestamp) < refresh_rate * 3600)):
                         cache_key = (github_user, github_token, cached_last_date_str)
                         if cache_key in ContributionsActions._contributions_cache:
                             cache_valid = True
