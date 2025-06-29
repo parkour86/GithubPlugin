@@ -114,7 +114,7 @@ class ContributionsActions(ActionBase):
         # Add logging for debugging
         log.info(f"[DEBUG] on_ready: github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}, cache_params={params}")
 
-        if github_token and github_user and refresh_rate != 0:
+        if github_token and github_user:
             self.fetch_and_display_contributions()
         else:
             self.clear_labels("error")
