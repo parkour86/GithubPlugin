@@ -446,7 +446,9 @@ class ContributionsActions(ActionBase):
                     # Cache is invalid or corrupted, force a fresh fetch
                     log.warning("[CACHE] last_date_str is None, forcing fresh fetch.")
                     cache_valid = False
-            else:
+
+            # After all cache checks, if cache_valid is still False, fetch from API
+            if not cache_valid:
                 # --- API CALL ---
                 query = """
                 query($login: String!) {
