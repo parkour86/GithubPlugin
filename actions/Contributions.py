@@ -105,6 +105,7 @@ class ContributionsActions(ActionBase):
         if cached_refresh_rate and refresh_rate != cached_refresh_rate:
             settings["refresh_rate"] = str(cached_refresh_rate)
             updated = True
+            log.info(f"[DEBUG] on_ready: Setting refresh_rate to {cached_refresh_rate}")
         if updated:
             self.set_settings(settings)
             github_token = settings.get("github_token", "")
