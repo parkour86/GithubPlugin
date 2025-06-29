@@ -271,7 +271,7 @@ class ContributionsActions(ActionBase):
         github_user = settings.get("github_user", "")
         refresh_rate = int(settings.get("refresh_rate", "0"))
         ContributionsActions._cache_params = (github_user, github_token, "", refresh_rate)
-        log.info(f"[DEBUG] on_refresh_rate_changed: cache_params={params}")
+        log.info(f"[DEBUG] on_refresh_rate_changed: cache_params={ContributionsActions._cache_params}")
         self.start_refresh_timer()
 
     def clear_labels(self, status):
