@@ -219,6 +219,9 @@ class ContributionsActions(ActionBase):
             settings["github_token"] = entry.get_text()
             self.set_settings(settings)
             github_user = settings.get("github_user", "")
+            refresh_rate = int(settings.get("refresh_rate", "0"))
+            github_token = settings.get("github_token", "")
+            ContributionsActions._cache_params = (github_user, github_token, "", refresh_rate)
             if github_user.strip():
                 self.fetch_and_display_contributions()
             self._token_change_timeout_id = None
@@ -242,6 +245,9 @@ class ContributionsActions(ActionBase):
             settings["github_user"] = entry.get_text()
             self.set_settings(settings)
             github_token = settings.get("github_token", "")
+            refresh_rate = int(settings.get("refresh_rate", "0"))
+            github_user = settings.get("github_user", "")
+            ContributionsActions._cache_params = (github_user, github_token, "", refresh_rate)
             if github_token.strip():
                 self.fetch_and_display_contributions()
             self._user_change_timeout_id = None
@@ -257,6 +263,10 @@ class ContributionsActions(ActionBase):
         if value is not None:
             settings["refresh_rate"] = value
         self.set_settings(settings)
+        github_token = settings.get("github_token", "")
+        github_user = settings.get("github_user", "")
+        refresh_rate = int(settings.get("refresh_rate", "0"))
+        ContributionsActions._cache_params = (github_user, github_token, "", refresh_rate)
         self.start_refresh_timer()
 
     def clear_labels(self, status):
