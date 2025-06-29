@@ -85,13 +85,16 @@ class ContributionsActions(ActionBase):
 
         # Auto-fill settings from cache if needed
         params = ContributionsActions._cache_params
-        cached_user = cached_token = cached_refresh_rate = None
+        cached_user = None
+        cached_token = None
+        cached_refresh_rate = 0  # Use 0 as a safe default
+
         if params is not None:
             if len(params) == 4:
                 cached_user, cached_token, _, cached_refresh_rate = params
             elif len(params) == 3:
                 cached_user, cached_token, _ = params
-                cached_refresh_rate = 0  # or your default
+
         updated = False
         if not github_user and cached_user:
             settings["github_user"] = cached_user
@@ -99,8 +102,7 @@ class ContributionsActions(ActionBase):
         if not github_token and cached_token:
             settings["github_token"] = cached_token
             updated = True
-        # Always sync refresh_rate from cache (or only if different)
-        if cached_refresh_rate is not None and refresh_rate != cached_refresh_rate:
+        if cached_refresh_rate and refresh_rate != cached_refresh_rate:
             settings["refresh_rate"] = str(cached_refresh_rate)
             updated = True
         if updated:
@@ -108,6 +110,8 @@ class ContributionsActions(ActionBase):
             github_token = settings.get("github_token", "")
             github_user = settings.get("github_user", "")
             refresh_rate = int(settings.get("refresh_rate", "0"))
+        # Add logging for debugging
+        log.info(f"[DEBUG] on_ready: github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}, cache_params={params}")
 
         if github_token and github_user and refresh_rate != 0:
             self.fetch_and_display_contributions()
@@ -427,11 +431,17 @@ class ContributionsActions(ActionBase):
         kwargs = {"color": red, "outline_width": 1, "font_size": 17, "font_family": "cantarell"}
         default_media = os.path.join(self.plugin_base.PATH, "assets", "info.png")
 
+        # Initialize to avoid possibly unbound variable errors
+        bimonthly_labels = []
+        bimonthly_images = []
+        bimonthly_counts = []
+
         try:
             settings = self.get_settings()
             github_token = settings.get("github_token", "")
             github_user = settings.get("github_user", "")
-            log.info(f"[DEBUG] Fetching contributions for {github_user}")
+            refresh_rate = settings.get("refresh_rate", "0")
+            log.info(f"[DEBUG] Fetching contributions for {github_user} with token={bool(github_token)}, refresh_rate={refresh_rate}")
 
             if not github_token or not github_user:
                 log.info("[DEBUG] No github_token or github_user, aborting fetch_and_display_contributions")
@@ -458,8 +468,12 @@ class ContributionsActions(ActionBase):
             now = time.time()
 
             # If cache_params exist, check if they match
+            cached_user = cached_token = cached_last_date_str = None
             if cache_params is not None:
-                cached_user, cached_token, cached_last_date_str = cache_params
+                if len(cache_params) == 4:
+                    cached_user, cached_token, cached_last_date_str, _ = cache_params
+                elif len(cache_params) == 3:
+                    cached_user, cached_token, cached_last_date_str = cache_params
                 if cached_user == github_user and cached_token == github_token:
                     # If refresh_rate is 0, always use cache if available (never refresh from API)
                     # If refresh_rate > 0, use cache only if not expired
@@ -745,11 +759,14 @@ class ContributionsActions(ActionBase):
                 self.set_media(media_path=default_media, size=0.9)
 
         except Exception as e:
+            import traceback
             self.clear_labels("error")
             self.set_top_label("\nInternal\nError", **kwargs)
             self.set_media(media_path=default_media, size=0.9)
             self.set_background_color(color=[255, 255, 255, 255], update=True)
             log.error(f"[DEBUG] API Internal Error:{e}", exc_info=True)
+            log.error(f"[DEBUG] github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}, settings={settings}, cache_params={getattr(ContributionsActions, '_cache_params', None)}")
+            log.error(traceback.format_exc())
 
 #
 
