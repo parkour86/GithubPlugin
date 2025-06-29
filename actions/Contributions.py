@@ -78,41 +78,41 @@ class ContributionsActions(ActionBase):
         refresh_rate = int(settings.get("refresh_rate", "0"))
         log.info(f"[MY DEBUG] *{selected_month}*")
 
-        # Set the cache if not already set and settings are available
-        if (ContributionsActions._cache_params is None and github_token and github_user):
-            # Use empty string for last_date_str if not available yet, and store refresh_rate
-            ContributionsActions._cache_params = (github_user, github_token, "", refresh_rate)
+        # If the cache is empty, initialize it from settings (if possible)
+        if ContributionsActions._cache_params is None:
+            if github_token and github_user:
+                ContributionsActions._cache_params = (github_user, github_token, "", refresh_rate)
+                log.info("[DEBUG] on_ready: Cache initialized from settings")
+            else:
+                log.info("[DEBUG] on_ready: Cache not initialized because settings incomplete")
+        else:
+            # Cache exists; compare each field with settings and overwrite settings if different
+            cached_user, cached_token, _, cached_refresh_rate = ContributionsActions._cache_params
 
-        # Auto-fill settings from cache if needed
-        params = ContributionsActions._cache_params
-        cached_user = None
-        cached_token = None
-        cached_refresh_rate = 0  # Use 0 as a safe default
+            updated = False
 
-        if params is not None:
-            if len(params) == 4:
-                cached_user, cached_token, _, cached_refresh_rate = params
-            elif len(params) == 3:
-                cached_user, cached_token, _ = params
+            if github_user != cached_user:
+                settings["github_user"] = cached_user
+                updated = True
+                log.info(f"[DEBUG] on_ready: github_user mismatch, updating to {cached_user}")
 
-        updated = False
-        if not github_user and cached_user:
-            settings["github_user"] = cached_user
-            updated = True
-        if not github_token and cached_token:
-            settings["github_token"] = cached_token
-            updated = True
-        if cached_refresh_rate and refresh_rate != cached_refresh_rate:
-            settings["refresh_rate"] = str(cached_refresh_rate)
-            updated = True
-            log.info(f"[DEBUG] on_ready: Setting refresh_rate to {cached_refresh_rate}")
-        if updated:
-            self.set_settings(settings)
-            github_token = settings.get("github_token", "")
-            github_user = settings.get("github_user", "")
-            refresh_rate = int(settings.get("refresh_rate", "0"))
-        # Add logging for debugging
-        log.info(f"[DEBUG] on_ready: github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}, cache_params={params}")
+            if github_token != cached_token:
+                settings["github_token"] = cached_token
+                updated = True
+                log.info(f"[DEBUG] on_ready: github_token mismatch, updating to {cached_token}")
+
+            if refresh_rate != cached_refresh_rate:
+                settings["refresh_rate"] = str(cached_refresh_rate)
+                updated = True
+                log.info(f"[DEBUG] on_ready: refresh_rate mismatch, updating to {cached_refresh_rate}")
+
+            if updated:
+                self.set_settings(settings)
+                github_token = settings.get("github_token", "")
+                github_user = settings.get("github_user", "")
+                refresh_rate = int(settings.get("refresh_rate", "0"))
+
+        log.info(f"[DEBUG] on_ready: github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}, cache_params={ContributionsActions._cache_params}")
 
         if github_token and github_user:
             self.fetch_and_display_contributions()
@@ -121,6 +121,7 @@ class ContributionsActions(ActionBase):
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
             self.set_top_label("\nConfigure\nGithub\nPlugin", color=[255, 100, 100], outline_width=1, font_size=17)
         self.start_refresh_timer()
+
 
     def on_key_down(self) -> None:
         settings = self.get_settings()
