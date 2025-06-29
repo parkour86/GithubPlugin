@@ -266,12 +266,17 @@ class ContributionsActions(ActionBase):
         if hasattr(value, "get_value"):
             value = value.get_value()
         if value is not None:
-            settings["refresh_rate"] = value
-        self.set_settings(settings)
+            new_refresh_rate = int(value)
+        else:
+            new_refresh_rate = int(settings.get("refresh_rate", "0"))
+
         github_token = settings.get("github_token", "")
         github_user = settings.get("github_user", "")
-        refresh_rate = int(settings.get("refresh_rate", "0"))
-        ContributionsActions._cache_params = (github_user, github_token, "", refresh_rate)
+        ContributionsActions._cache_params = (github_user, github_token, "", new_refresh_rate)
+
+        settings["refresh_rate"] = str(new_refresh_rate)
+        self.set_settings(settings)
+
         log.info(f"[DEBUG] on_refresh_rate_changed: cache_params={ContributionsActions._cache_params}")
         self.start_refresh_timer()
 
