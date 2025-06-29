@@ -85,30 +85,29 @@ class ContributionsActions(ActionBase):
 
         # Auto-fill settings from cache if needed
         params = ContributionsActions._cache_params
+        cached_user = cached_token = cached_refresh_rate = None
         if params is not None:
             if len(params) == 4:
                 cached_user, cached_token, _, cached_refresh_rate = params
             elif len(params) == 3:
                 cached_user, cached_token, _ = params
                 cached_refresh_rate = 0  # or your default
-            else:
-                cached_user = cached_token = cached_refresh_rate = None
-            updated = False
-            if not github_user and cached_user:
-                settings["github_user"] = cached_user
-                updated = True
-            if not github_token and cached_token:
-                settings["github_token"] = cached_token
-                updated = True
-            # Always sync refresh_rate from cache (or only if different)
-            if refresh_rate != cached_refresh_rate:
-                settings["refresh_rate"] = str(cached_refresh_rate)
-                updated = True
-            if updated:
-                self.set_settings(settings)
-                github_token = settings.get("github_token", "")
-                github_user = settings.get("github_user", "")
-                refresh_rate = int(settings.get("refresh_rate", "0"))
+        updated = False
+        if not github_user and cached_user:
+            settings["github_user"] = cached_user
+            updated = True
+        if not github_token and cached_token:
+            settings["github_token"] = cached_token
+            updated = True
+        # Always sync refresh_rate from cache (or only if different)
+        if cached_refresh_rate is not None and refresh_rate != cached_refresh_rate:
+            settings["refresh_rate"] = str(cached_refresh_rate)
+            updated = True
+        if updated:
+            self.set_settings(settings)
+            github_token = settings.get("github_token", "")
+            github_user = settings.get("github_user", "")
+            refresh_rate = int(settings.get("refresh_rate", "0"))
 
         if github_token and github_user and refresh_rate != 0:
             self.fetch_and_display_contributions()
@@ -298,7 +297,6 @@ class ContributionsActions(ActionBase):
         log.info(f"[DEBUG] on_display_month_changed: Saving selected_month = {month_part}")
         settings["selected_month"] = month_part
         self.set_settings(settings)
-        log.info(f"[DEBUG] on_display_month_changed: settings after save: {self.get_settings()}")
 
         if hasattr(self, "_quarter_labels") and hasattr(self, "_quarter_images") and hasattr(self, "_quarter_counts"):
             filtered = [
