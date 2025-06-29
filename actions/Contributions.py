@@ -75,8 +75,42 @@ class ContributionsActions(ActionBase):
         github_token = settings.get("github_token", "")
         github_user = settings.get("github_user", "")
         selected_month = settings.get("selected_month", "")
+        refresh_rate = int(settings.get("refresh_rate", "0"))
         log.info(f"[MY DEBUG] *{selected_month}*")
-        if github_token and github_user:
+
+        # Set the cache if not already set and settings are available
+        if (ContributionsActions._cache_params is None and github_token and github_user):
+            # Use empty string for last_date_str if not available yet, and store refresh_rate
+            ContributionsActions._cache_params = (github_user, github_token, "", refresh_rate)
+
+        # Auto-fill settings from cache if needed
+        params = ContributionsActions._cache_params
+        if params is not None:
+            if len(params) == 4:
+                cached_user, cached_token, _, cached_refresh_rate = params
+            elif len(params) == 3:
+                cached_user, cached_token, _ = params
+                cached_refresh_rate = 0  # or your default
+            else:
+                cached_user = cached_token = cached_refresh_rate = None
+            updated = False
+            if not github_user and cached_user:
+                settings["github_user"] = cached_user
+                updated = True
+            if not github_token and cached_token:
+                settings["github_token"] = cached_token
+                updated = True
+            # Always sync refresh_rate from cache (or only if different)
+            if refresh_rate != cached_refresh_rate:
+                settings["refresh_rate"] = str(cached_refresh_rate)
+                updated = True
+            if updated:
+                self.set_settings(settings)
+                github_token = settings.get("github_token", "")
+                github_user = settings.get("github_user", "")
+                refresh_rate = int(settings.get("refresh_rate", "0"))
+
+        if github_token and github_user and refresh_rate != 0:
             self.fetch_and_display_contributions()
         else:
             self.clear_labels("error")
@@ -555,7 +589,7 @@ class ContributionsActions(ActionBase):
                         "counts": bimonthly_counts,
                     }
                     ContributionsActions._cache_timestamp = now
-                    ContributionsActions._cache_params = (github_user, github_token, last_date_str)
+                    ContributionsActions._cache_params = (github_user, github_token, last_date_str, refresh_rate)
 
                 except Exception as e:
                     self.clear_labels("error")
