@@ -221,12 +221,15 @@ class ContributionsActions(ActionBase):
 
         def do_update():
             settings = self.get_settings()
-            settings["github_token"] = entry.get_text()
-            self.set_settings(settings)
+            new_github_token = entry.get_text().strip()
             github_user = settings.get("github_user", "")
             refresh_rate = int(settings.get("refresh_rate", "0"))
-            github_token = settings.get("github_token", "")
-            ContributionsActions._cache_params = (github_user, github_token, "", refresh_rate)
+
+            ContributionsActions._cache_params = (github_user, new_github_token, "", refresh_rate)
+
+            settings["github_token"] = new_github_token
+            self.set_settings(settings)
+
             if github_user.strip():
                 self.fetch_and_display_contributions()
             self._token_change_timeout_id = None
@@ -247,12 +250,15 @@ class ContributionsActions(ActionBase):
 
         def do_update():
             settings = self.get_settings()
-            settings["github_user"] = entry.get_text()
-            self.set_settings(settings)
+            new_github_user = entry.get_text().strip()
             github_token = settings.get("github_token", "")
             refresh_rate = int(settings.get("refresh_rate", "0"))
-            github_user = settings.get("github_user", "")
-            ContributionsActions._cache_params = (github_user, github_token, "", refresh_rate)
+
+            ContributionsActions._cache_params = (new_github_user, github_token, "", refresh_rate)
+
+            settings["github_user"] = new_github_user
+            self.set_settings(settings)
+
             if github_token.strip():
                 self.fetch_and_display_contributions()
             self._user_change_timeout_id = None
