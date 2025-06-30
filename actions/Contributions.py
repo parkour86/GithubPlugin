@@ -96,7 +96,6 @@ class ContributionsActions(ActionCore):
         self._refresh_timer_id = None  # For periodic refresh
 
     def on_ready(self) -> None:
-        self._initializing = True
         time.sleep(0.2)
         settings = self.get_settings()
         selected_month = settings.get("selected_month", "")
@@ -124,12 +123,6 @@ class ContributionsActions(ActionCore):
             self.set_settings(settings)
 
         log.info(f"[DEBUG] on_ready: github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}")
-
-        current_widget_value = self.refresh_rate_widget.get_value()
-        if current_widget_value != refresh_rate:
-            self.refresh_rate_widget.set_value(refresh_rate)
-
-        self._initializing = False
 
         if github_token and github_user:
             self.fetch_and_display_contributions()
@@ -289,9 +282,6 @@ class ContributionsActions(ActionCore):
         self._user_change_timeout_id = GLib.timeout_add(500, do_update)
 
     def on_refresh_rate_changed(self, widget, value, old):
-        if getattr(self, "_initializing", False):
-            log.info("[DEBUG] on_refresh_rate_changed ignored during initialization")
-            return
         log.info("[DEBUG] on_refresh_rate_changed Triggered")
         settings = self.get_settings()
         if hasattr(value, "get_value"):
@@ -304,15 +294,25 @@ class ContributionsActions(ActionCore):
         github_token = settings.get("github_token", "")
         github_user = settings.get("github_user", "")
 
+        # # Read current global settings
+        # global_settings = read_global_settings()
+        # if (int(global_settings.get("refresh_rate", 0)) != new_refresh_rate):
+        #     # Only write if something actually changed
+        #     write_global_settings(github_user, github_token, new_refresh_rate)
+        #     log.info("[DEBUG] on_refresh_rate_changed: Wrote to global settings file")
+        # else:
+        #     log.info("[DEBUG] on_refresh_rate_changed: No change, did not write to global settings file")
+
         # Read current global settings
         global_settings = read_global_settings()
-        if (int(global_settings.get("refresh_rate", 0)) != new_refresh_rate):
-            # Only write if something actually changed
+        current_global_rate = int(global_settings.get("refresh_rate", 0))
+
+        # 🚨 Ignore spurious writes if local was just synced with global (difference only because page loaded)
+        if current_global_rate == new_refresh_rate:
+            log.info("[DEBUG] on_refresh_rate_changed: No actual user change detected, skipping write")
+        else:
             write_global_settings(github_user, github_token, new_refresh_rate)
             log.info("[DEBUG] on_refresh_rate_changed: Wrote to global settings file")
-        else:
-            log.info("[DEBUG] on_refresh_rate_changed: No change, did not write to global settings file")
-
 
         settings["refresh_rate"] = str(new_refresh_rate)
         self.set_settings(settings)
