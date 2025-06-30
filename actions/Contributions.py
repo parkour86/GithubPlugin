@@ -107,6 +107,7 @@ class ContributionsActions(ActionCore):
         github_token = global_settings.get("github_token", "")
         github_user = global_settings.get("github_user", "")
         refresh_rate = int(global_settings.get("refresh_rate", 0))
+        log.info(f"[DEBUG] on_ready global settings: github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}")
 
         updated = False
         # Overwrite button settings if different from global
@@ -128,7 +129,7 @@ class ContributionsActions(ActionCore):
             github_user = settings.get("github_user", "")
             refresh_rate = int(settings.get("refresh_rate", "0"))
 
-        log.info(f"[DEBUG] on_ready: github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}")
+        log.info(f"[DEBUG] on_ready settings: github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}")
 
         if github_token and github_user:
             self.fetch_and_display_contributions()
