@@ -125,6 +125,10 @@ class ContributionsActions(ActionCore):
 
         log.info(f"[DEBUG] on_ready: github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}")
 
+        current_widget_value = self.refresh_rate_widget.get_value()
+        if current_widget_value != refresh_rate:
+            self.refresh_rate_widget.set_value(refresh_rate)
+
         self._initializing = False
 
         if github_token and github_user:
