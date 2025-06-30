@@ -22,7 +22,7 @@ from gi.repository import Gtk, Adw
 from GtkHelper.GenerativeUI.ComboRow import ComboRow
 
 import time
-
+import threading
 import json
 import os
 
@@ -94,12 +94,13 @@ class ContributionsActions(ActionCore):
         self._token_change_timeout_id = None
         self._user_change_timeout_id = None
         self._refresh_timer_id = None  # For periodic refresh
+        self._refresh_rate_write_timer = None # For periodic write of refresh rate
 
     def on_ready(self) -> None:
         time.sleep(0.2)
         settings = self.get_settings()
         selected_month = settings.get("selected_month", "")
-
+        log.info(f"[DEBUG] on_ready: selected_month={selected_month}")
         # Read global settings from file
         global_settings = read_global_settings()
         log.info(f"[DEBUG] on_ready: global_settings from file: {global_settings}")
@@ -303,16 +304,22 @@ class ContributionsActions(ActionCore):
         # else:
         #     log.info("[DEBUG] on_refresh_rate_changed: No change, did not write to global settings file")
 
-        # Read current global settings
-        global_settings = read_global_settings()
-        current_global_rate = int(global_settings.get("refresh_rate", 0))
+        # Always update button's local settings immediately
+        settings["refresh_rate"] = str(new_refresh_rate)
+        self.set_settings(settings)
 
-        # 🚨 Ignore spurious writes if local was just synced with global (difference only because page loaded)
-        if current_global_rate == new_refresh_rate:
-            log.info("[DEBUG] on_refresh_rate_changed: No actual user change detected, skipping write")
-        else:
-            write_global_settings(github_user, github_token, new_refresh_rate)
-            log.info("[DEBUG] on_refresh_rate_changed: Wrote to global settings file")
+        # Debounce global writes: cancel any pending timer
+        if self._refresh_rate_write_timer is not None:
+            self._refresh_rate_write_timer.cancel()
+
+        # Schedule write after 0.5s of quiet
+        self._refresh_rate_write_timer = threading.Timer(
+            0.5,
+            self._write_refresh_rate_if_changed,
+            args=(github_user, github_token, new_refresh_rate),
+        )
+        self._refresh_rate_write_timer.start()
+
 
         settings["refresh_rate"] = str(new_refresh_rate)
         self.set_settings(settings)
