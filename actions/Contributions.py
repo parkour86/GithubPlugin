@@ -94,7 +94,7 @@ class ContributionsActions(ActionCore):
         self._token_change_timeout_id = None
         self._user_change_timeout_id = None
         self._refresh_timer_id = None  # For periodic refresh
-        self._refresh_rate_write_timer = None # For periodic write of refresh rate
+        self._debounce_timers = {} # For periodic write of github_user, github_token, refresh_rate
 
     def on_ready(self) -> None:
         time.sleep(0.2)
@@ -237,11 +237,15 @@ class ContributionsActions(ActionCore):
             github_user = settings.get("github_user", "")
             refresh_rate = int(settings.get("refresh_rate", "0"))
 
-            # Write to global file
-            write_global_settings(github_user, new_github_token, refresh_rate)
-
             settings["github_token"] = new_github_token
             self.set_settings(settings)
+
+            self._debounced_write_global_settings(
+                field_name="github_token",
+                github_user=github_user,
+                github_token=new_token,
+                new_value=new_token,
+                )
 
             if github_user.strip():
                 self.fetch_and_display_contributions()
@@ -268,11 +272,15 @@ class ContributionsActions(ActionCore):
             github_token = settings.get("github_token", "")
             refresh_rate = int(settings.get("refresh_rate", "0"))
 
-            # Write to global file
-            write_global_settings(new_github_user, github_token, refresh_rate)
-
             settings["github_user"] = new_github_user
             self.set_settings(settings)
+
+            self._debounced_write_global_settings(
+                field_name="github_user",
+                github_user=new_github_user,
+                github_token=github_token,
+                new_value=new_github_user,
+                )
 
             if github_token.strip():
                 self.fetch_and_display_contributions()
@@ -308,33 +316,53 @@ class ContributionsActions(ActionCore):
         settings["refresh_rate"] = str(new_refresh_rate)
         self.set_settings(settings)
 
-        # Debounce global writes: cancel any pending timer
-        if self._refresh_rate_write_timer is not None:
-            self._refresh_rate_write_timer.cancel()
-
-        # Schedule write after 0.5s of quiet
-        self._refresh_rate_write_timer = threading.Timer(
-            0.5,
-            self._write_refresh_rate_if_changed,
-            args=(github_user, github_token, new_refresh_rate),
+        self._debounced_write_global_settings(
+            field_name="refresh_rate",
+            github_user=github_user,
+            github_token=github_token,
+            new_value=new_refresh_rate,
         )
-        self._refresh_rate_write_timer.start()
-
-
-        settings["refresh_rate"] = str(new_refresh_rate)
-        self.set_settings(settings)
 
         log.info(f"[DEBUG] on_refresh_rate_changed: github_user={github_user}, github_token={github_token}, refresh_rate={new_refresh_rate}")
         self.start_refresh_timer()
 
-    def _write_refresh_rate_if_changed(self, github_user, github_token, new_refresh_rate):
+
+    def _debounced_write_global_settings(self, field_name: str, github_user: str, github_token: str, new_value: int | str, delay: float = 0.5):
+        """
+        Debounce writes for any setting: refresh_rate, github_user, github_token.
+        - field_name: str, used to track independent timers per field.
+        - github_user/github_token: current values.
+        - new_value: new setting value for the field.
+        - delay: debounce time in seconds.
+        """
+        if field_name in self._debounce_timers:
+            self._debounce_timers[field_name].cancel()
+
+        self._debounce_timers[field_name] = threading.Timer(
+            delay,
+            self._write_global_if_changed,
+            args=(github_user, github_token, field_name, new_value),
+        )
+        self._debounce_timers[field_name].start()
+
+    def _write_global_if_changed(self, github_user: str, github_token: str, field_name: str, new_value: int | str):
+        """
+        Called after debounce delay: writes new_value to the global JSON if it differs from current global setting.
+        """
         global_settings = read_global_settings()
-        current_global_rate = int(global_settings.get("refresh_rate", 0))
-        if current_global_rate != new_refresh_rate:
-            write_global_settings(github_user, github_token, new_refresh_rate)
-            log.info("[DEBUG] _write_refresh_rate_if_changed: Wrote to global settings file")
+        current_global_value = str(global_settings.get(field_name, ""))
+
+        if str(new_value) != current_global_value:
+            # Reconstruct global_settings dict with updated field
+            new_global = global_settings.copy()
+            new_global["github_user"] = github_user
+            new_global["github_token"] = github_token
+            new_global[field_name] = str(new_value)
+            write_global_settings(new_global["github_user"], new_global["github_token"], int(new_global.get("refresh_rate", 0)))
+            log.info(f"[DEBUG] _write_global_if_changed: Wrote updated {field_name}={new_value} to global settings file")
         else:
-            log.info("[DEBUG] _write_refresh_rate_if_changed: No change needed, skipping write")
+            log.info(f"[DEBUG] _write_global_if_changed: {field_name}={new_value} unchanged, skipping write")
+
 
     def clear_labels(self, status):
         self.set_top_label(None)
