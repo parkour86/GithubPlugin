@@ -277,6 +277,7 @@ class ContributionsActions(ActionCore):
         self._user_change_timeout_id = GLib.timeout_add(500, do_update)
 
     def on_refresh_rate_changed(self, widget, value, old):
+        log.info("[DEBUG] on_refresh_rate_changed Triggered")
         settings = self.get_settings()
         if hasattr(value, "get_value"):
             value = value.get_value()
