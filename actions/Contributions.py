@@ -96,6 +96,7 @@ class ContributionsActions(ActionCore):
         self._refresh_timer_id = None  # For periodic refresh
 
     def on_ready(self) -> None:
+        self._initializing = True
         time.sleep(0.2)
         settings = self.get_settings()
         selected_month = settings.get("selected_month", "")
@@ -118,14 +119,13 @@ class ContributionsActions(ActionCore):
         if int(settings.get("refresh_rate", 0)) != refresh_rate:
             settings["refresh_rate"] = str(refresh_rate)
             updated = True
+
         if updated:
             self.set_settings(settings)
-            settings = self.get_settings()
-            github_token = settings.get("github_token", "")
-            github_user = settings.get("github_user", "")
-            refresh_rate = int(settings.get("refresh_rate", "0"))
 
         log.info(f"[DEBUG] on_ready: github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}")
+
+        self._initializing = False
 
         if github_token and github_user:
             self.fetch_and_display_contributions()
@@ -285,6 +285,9 @@ class ContributionsActions(ActionCore):
         self._user_change_timeout_id = GLib.timeout_add(500, do_update)
 
     def on_refresh_rate_changed(self, widget, value, old):
+        if getattr(self, "_initializing", False):
+            log.info("[DEBUG] on_refresh_rate_changed ignored during initialization")
+            return
         log.info("[DEBUG] on_refresh_rate_changed Triggered")
         settings = self.get_settings()
         if hasattr(value, "get_value"):
