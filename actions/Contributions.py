@@ -327,6 +327,15 @@ class ContributionsActions(ActionCore):
         log.info(f"[DEBUG] on_refresh_rate_changed: github_user={github_user}, github_token={github_token}, refresh_rate={new_refresh_rate}")
         self.start_refresh_timer()
 
+    def _write_refresh_rate_if_changed(self, github_user, github_token, new_refresh_rate):
+        global_settings = read_global_settings()
+        current_global_rate = int(global_settings.get("refresh_rate", 0))
+        if current_global_rate != new_refresh_rate:
+            write_global_settings(github_user, github_token, new_refresh_rate)
+            log.info("[DEBUG] _write_refresh_rate_if_changed: Wrote to global settings file")
+        else:
+            log.info("[DEBUG] _write_refresh_rate_if_changed: No change needed, skipping write")
+
     def clear_labels(self, status):
         self.set_top_label(None)
         self.set_center_label(None)
