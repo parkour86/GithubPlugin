@@ -123,9 +123,10 @@ class ContributionsActions(ActionCore):
 
         if updated:
             self.set_settings(settings)
-            self.refresh_config_ui()
+
 
         self.set_settings(settings)
+        self.refresh_config_ui()
 
         # Reload the updated settings
         settings = self.get_settings()
