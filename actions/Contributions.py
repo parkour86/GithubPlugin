@@ -2,6 +2,7 @@
 from src.backend.PluginManager.ActionBase import ActionBase
 from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.PluginManager.ActionHolder import ActionHolder
+from src.backend.PluginManager.ActionCore import ActionCore
 
 # Import python modules
 import os
@@ -22,7 +23,31 @@ from GtkHelper.GenerativeUI.ComboRow import ComboRow
 
 import time
 
-class ContributionsActions(ActionBase):
+import json
+import os
+
+GLOBAL_CONFIG_PATH = os.path.expanduser("~/.config/streamcontroller/github_plugin_settings.json")
+
+def read_global_settings():
+    if os.path.exists(GLOBAL_CONFIG_PATH):
+        with open(GLOBAL_CONFIG_PATH, "r") as f:
+            try:
+                return json.load(f)
+            except Exception:
+                return {}
+    return {}
+
+def write_global_settings(github_user, github_token, refresh_rate):
+    data = {
+        "github_user": github_user,
+        "github_token": github_token,
+        "refresh_rate": refresh_rate,
+    }
+    os.makedirs(os.path.dirname(GLOBAL_CONFIG_PATH), exist_ok=True)
+    with open(GLOBAL_CONFIG_PATH, "w") as f:
+        json.dump(data, f)
+
+class ContributionsActions(ActionCore):
     """
     Action for displaying GitHub contributions by quarter.
     Fetches contribution data using the GitHub GraphQL API and displays summary stats.
@@ -72,47 +97,29 @@ class ContributionsActions(ActionBase):
 
     def on_ready(self) -> None:
         settings = self.get_settings()
-        github_token = settings.get("github_token", "")
-        github_user = settings.get("github_user", "")
         selected_month = settings.get("selected_month", "")
-        refresh_rate = int(settings.get("refresh_rate", "0"))
-        log.info(f"[MY DEBUG] *{selected_month}*")
 
-        # If the cache is empty, initialize it from settings (if possible)
-        if ContributionsActions._cache_params is None:
-            if github_token and github_user:
-                ContributionsActions._cache_params = (github_user, github_token, "", refresh_rate)
-                log.info("[DEBUG] on_ready: Cache initialized from settings")
-            else:
-                log.info("[DEBUG] on_ready: Cache not initialized because settings incomplete")
-        else:
-            # Cache exists; compare each field with settings and overwrite settings if different
-            cached_user, cached_token, _, cached_refresh_rate = ContributionsActions._cache_params
+        # Read global settings from file
+        global_settings = read_global_settings()
+        github_token = global_settings.get("github_token", "")
+        github_user = global_settings.get("github_user", "")
+        refresh_rate = int(global_settings.get("refresh_rate", 0))
 
-            updated = False
+        updated = False
+        # Overwrite button settings if different from global
+        if settings.get("github_user") != github_user:
+            settings["github_user"] = github_user
+            updated = True
+        if settings.get("github_token") != github_token:
+            settings["github_token"] = github_token
+            updated = True
+        if int(settings.get("refresh_rate", 0)) != refresh_rate:
+            settings["refresh_rate"] = str(refresh_rate)
+            updated = True
+        if updated:
+            self.set_settings(settings)
 
-            if github_user != cached_user:
-                settings["github_user"] = cached_user
-                updated = True
-                log.info(f"[DEBUG] on_ready: github_user mismatch, updating to {cached_user}")
-
-            if github_token != cached_token:
-                settings["github_token"] = cached_token
-                updated = True
-                log.info(f"[DEBUG] on_ready: github_token mismatch, updating to {cached_token}")
-
-            if refresh_rate != cached_refresh_rate:
-                settings["refresh_rate"] = str(cached_refresh_rate)
-                updated = True
-                log.info(f"[DEBUG] on_ready: refresh_rate mismatch, updating to {cached_refresh_rate}")
-
-            if updated:
-                self.set_settings(settings)
-                github_token = settings.get("github_token", "")
-                github_user = settings.get("github_user", "")
-                refresh_rate = int(settings.get("refresh_rate", "0"))
-
-        log.info(f"[DEBUG] on_ready: github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}, cache_params={ContributionsActions._cache_params}")
+        log.info(f"[DEBUG] on_ready: github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}")
 
         if github_token and github_user:
             self.fetch_and_display_contributions()
@@ -225,7 +232,8 @@ class ContributionsActions(ActionBase):
             github_user = settings.get("github_user", "")
             refresh_rate = int(settings.get("refresh_rate", "0"))
 
-            ContributionsActions._cache_params = (github_user, new_github_token, "", refresh_rate)
+            # Write to global file
+            write_global_settings(github_user, new_github_token, refresh_rate)
 
             settings["github_token"] = new_github_token
             self.set_settings(settings)
@@ -254,7 +262,8 @@ class ContributionsActions(ActionBase):
             github_token = settings.get("github_token", "")
             refresh_rate = int(settings.get("refresh_rate", "0"))
 
-            ContributionsActions._cache_params = (new_github_user, github_token, "", refresh_rate)
+            # Write to global file
+            write_global_settings(new_github_user, github_token, refresh_rate)
 
             settings["github_user"] = new_github_user
             self.set_settings(settings)
@@ -278,12 +287,14 @@ class ContributionsActions(ActionBase):
 
         github_token = settings.get("github_token", "")
         github_user = settings.get("github_user", "")
-        ContributionsActions._cache_params = (github_user, github_token, "", new_refresh_rate)
+
+        # Write to global file
+        write_global_settings(github_user, github_token, new_refresh_rate)
 
         settings["refresh_rate"] = str(new_refresh_rate)
         self.set_settings(settings)
 
-        log.info(f"[DEBUG] on_refresh_rate_changed: cache_params={ContributionsActions._cache_params}")
+        log.info(f"[DEBUG] on_refresh_rate_changed: github_user={github_user}, github_token={github_token}, refresh_rate={new_refresh_rate}")
         self.start_refresh_timer()
 
     def clear_labels(self, status):
