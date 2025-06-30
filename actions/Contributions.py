@@ -101,6 +101,7 @@ class ContributionsActions(ActionCore):
 
         # Read global settings from file
         global_settings = read_global_settings()
+        log.info(f"[DEBUG] on_ready: global_settings from file: {global_settings}")
         github_token = global_settings.get("github_token", "")
         github_user = global_settings.get("github_user", "")
         refresh_rate = int(global_settings.get("refresh_rate", 0))
@@ -118,6 +119,10 @@ class ContributionsActions(ActionCore):
             updated = True
         if updated:
             self.set_settings(settings)
+            settings = self.get_settings()
+            github_token = settings.get("github_token", "")
+            github_user = settings.get("github_user", "")
+            refresh_rate = int(settings.get("refresh_rate", "0"))
 
         log.info(f"[DEBUG] on_ready: github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}")
 
