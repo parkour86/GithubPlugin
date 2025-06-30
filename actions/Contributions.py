@@ -115,10 +115,12 @@ class ContributionsActions(ActionCore):
             settings["github_token"] = github_token
             updated = True
         if int(settings.get("refresh_rate", 0)) != refresh_rate:
+            self._programmatic_update = True
             settings["refresh_rate"] = str(refresh_rate)
             updated = True
         if updated:
             self.set_settings(settings)
+            self._programmatic_update = False
             settings = self.get_settings()
             github_token = settings.get("github_token", "")
             github_user = settings.get("github_user", "")
@@ -285,6 +287,9 @@ class ContributionsActions(ActionCore):
 
     def on_refresh_rate_changed(self, widget, value, old):
         log.info("[DEBUG] on_refresh_rate_changed Triggered")
+        if getattr(self, "_programmatic_update", False):
+            log.info("ignore programmatic changes")
+            return  # Ignore programmatic changes
         settings = self.get_settings()
         if hasattr(value, "get_value"):
             value = value.get_value()
