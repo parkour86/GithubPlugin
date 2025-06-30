@@ -123,10 +123,8 @@ class ContributionsActions(ActionCore):
 
         if updated:
             self.set_settings(settings)
-
-
-        self.set_settings(settings)
-        self.refresh_config_ui()
+            if hasattr(self, "refresh_rate_row"):
+                self.refresh_rate_row.set_value(str(refresh_rate))
 
         # Reload the updated settings
         settings = self.get_settings()
@@ -177,7 +175,7 @@ class ContributionsActions(ActionCore):
 
         # ComboRow for refresh rate (hours)
         refresh_options = ["0", "1", "6", "12", "24"]
-        refresh_rate_row = ComboRow(
+        self.refresh_rate_row = ComboRow(
             action_core=self,
             var_name="refresh_rate",
             default_value=str(refresh_rate),
@@ -186,6 +184,7 @@ class ContributionsActions(ActionCore):
             on_change=self.on_refresh_rate_changed,
             auto_add=False
         )
+        refresh_rate_row = self.refresh_rate_row
 
         # ComboRow for Display Contribution Month
         # Only show periods for which images/data exist (populated after fetch)
@@ -231,17 +230,7 @@ class ContributionsActions(ActionCore):
             show_bottom_label_row,
         ]
 
-    def refresh_config_ui(self):
-        """
-        Remove all old config rows/widgets from the container and add new ones.
-        Assumes self.config_container is the parent container for config rows.
-        """
-        if hasattr(self, "config_container"):
-            for child in self.config_container.get_children():
-                self.config_container.remove(child)
-            for row in self.get_config_rows():
-                self.config_container.add(row)
-            self.config_container.show_all()
+
 
     def on_token_changed(self, entry, *args):
         log.info("[DEBUG] on_token_changed Triggered")
