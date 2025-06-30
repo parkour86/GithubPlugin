@@ -222,6 +222,7 @@ class ContributionsActions(ActionCore):
         ]
 
     def on_token_changed(self, entry, *args):
+        log.info("[DEBUG] on_token_changed Triggered")
         from gi.repository import GLib
         # Cancel any pending timeout
         if self._token_change_timeout_id is not None:
@@ -252,6 +253,7 @@ class ContributionsActions(ActionCore):
         self._token_change_timeout_id = GLib.timeout_add(500, do_update)
 
     def on_user_changed(self, entry, *args):
+        log.info("[DEBUG] on_user_changed Triggered")
         from gi.repository import GLib
         # Cancel any pending timeout
         if self._user_change_timeout_id is not None:
