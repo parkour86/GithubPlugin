@@ -122,6 +122,11 @@ class ContributionsActions(ActionCore):
 
         if updated:
             self.set_settings(settings)
+            # Reload the updated settings
+            settings = self.get_settings()
+            github_token = settings.get("github_token", "")
+            github_user = settings.get("github_user", "")
+            refresh_rate = int(settings.get("refresh_rate", "0"))
 
         log.info(f"[DEBUG] on_ready: github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}")
 
