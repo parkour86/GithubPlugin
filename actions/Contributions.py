@@ -123,6 +123,7 @@ class ContributionsActions(ActionCore):
 
         if updated:
             self.set_settings(settings)
+            self.refresh_config_ui()
 
         self.set_settings(settings)
 
@@ -228,6 +229,18 @@ class ContributionsActions(ActionCore):
             show_top_label_row,
             show_bottom_label_row,
         ]
+
+    def refresh_config_ui(self):
+        """
+        Remove all old config rows/widgets from the container and add new ones.
+        Assumes self.config_container is the parent container for config rows.
+        """
+        if hasattr(self, "config_container"):
+            for child in self.config_container.get_children():
+                self.config_container.remove(child)
+            for row in self.get_config_rows():
+                self.config_container.add(row)
+            self.config_container.show_all()
 
     def on_token_changed(self, entry, *args):
         log.info("[DEBUG] on_token_changed Triggered")
