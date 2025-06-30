@@ -124,6 +124,8 @@ class ContributionsActions(ActionCore):
         if updated:
             self.set_settings(settings)
 
+        self.set_settings(settings)
+
         # Reload the updated settings
         settings = self.get_settings()
         github_token = settings.get("github_token", "")
