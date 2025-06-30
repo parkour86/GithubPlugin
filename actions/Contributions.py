@@ -96,6 +96,7 @@ class ContributionsActions(ActionCore):
         self._refresh_timer_id = None  # For periodic refresh
 
     def on_ready(self) -> None:
+        time.sleep(0.2)
         settings = self.get_settings()
         selected_month = settings.get("selected_month", "")
 
