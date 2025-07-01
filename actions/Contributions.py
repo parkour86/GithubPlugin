@@ -123,8 +123,6 @@ class ContributionsActions(ActionCore):
 
         if updated:
             self.set_settings(settings)
-            if hasattr(self, "refresh_rate_row"):
-                self.refresh_rate_row.set_value(str(refresh_rate))
 
         # Reload the updated settings
         settings = self.get_settings()
@@ -175,7 +173,7 @@ class ContributionsActions(ActionCore):
 
         # ComboRow for refresh rate (hours)
         refresh_options = ["0", "1", "6", "12", "24"]
-        self.refresh_rate_row = ComboRow(
+        refresh_rate_row = ComboRow(
             action_core=self,
             var_name="refresh_rate",
             default_value=str(refresh_rate),
@@ -184,7 +182,6 @@ class ContributionsActions(ActionCore):
             on_change=self.on_refresh_rate_changed,
             auto_add=False
         )
-        refresh_rate_row = self.refresh_rate_row
 
         # ComboRow for Display Contribution Month
         # Only show periods for which images/data exist (populated after fetch)
