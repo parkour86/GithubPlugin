@@ -24,9 +24,10 @@ from GtkHelper.GenerativeUI.ComboRow import ComboRow
 import time
 import threading
 import json
-import os
 
 GLOBAL_CONFIG_PATH = os.path.expanduser("~/.config/streamcontroller/github_plugin_settings.json")
+
+debug = False
 
 def read_global_settings():
     if os.path.exists(GLOBAL_CONFIG_PATH):
@@ -100,14 +101,17 @@ class ContributionsActions(ActionCore):
         time.sleep(0.2)
         settings = self.get_settings()
         selected_month = settings.get("selected_month", "")
-        log.info(f"[DEBUG] on_ready: selected_month={selected_month}")
+        if debug:
+            log.info(f"[DEBUG] on_ready: selected_month={selected_month}")
         # Read global settings from file
         global_settings = read_global_settings()
-        log.info(f"[DEBUG] on_ready: global_settings from file: {global_settings}")
+        if debug:
+            log.info(f"[DEBUG] on_ready: global_settings from file: {global_settings}")
         github_token = global_settings.get("github_token", "")
         github_user = global_settings.get("github_user", "")
         refresh_rate = int(global_settings.get("refresh_rate", 0))
-        log.info(f"[DEBUG] on_ready global settings: github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}")
+        if debug:
+            log.info(f"[DEBUG] on_ready global settings: github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}")
 
         updated = False
         # Overwrite button settings if different from global
@@ -130,7 +134,8 @@ class ContributionsActions(ActionCore):
         github_user = settings.get("github_user", "")
         refresh_rate = int(settings.get("refresh_rate", "0"))
 
-        log.info(f"[DEBUG] on_ready settings: github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}")
+        if debug:
+            log.info(f"[DEBUG] on_ready settings: github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}")
 
         if github_token and github_user:
             self.fetch_and_display_contributions()
@@ -230,7 +235,8 @@ class ContributionsActions(ActionCore):
 
 
     def on_token_changed(self, entry, *args):
-        log.info("[DEBUG] on_token_changed Triggered")
+        if debug:
+            log.info("[DEBUG] on_token_changed Triggered")
         from gi.repository import GLib
         # Cancel any pending timeout
         if self._token_change_timeout_id is not None:
@@ -244,7 +250,6 @@ class ContributionsActions(ActionCore):
             settings = self.get_settings()
             new_github_token = entry.get_text().strip()
             github_user = settings.get("github_user", "")
-            refresh_rate = int(settings.get("refresh_rate", "0"))
 
             settings["github_token"] = new_github_token
             self.set_settings(settings)
@@ -252,8 +257,8 @@ class ContributionsActions(ActionCore):
             self._debounced_write_global_settings(
                 field_name="github_token",
                 github_user=github_user,
-                github_token=new_token,
-                new_value=new_token,
+                github_token=new_github_token,
+                new_value=new_github_token,
                 )
 
             if github_user.strip():
@@ -265,7 +270,8 @@ class ContributionsActions(ActionCore):
         self._token_change_timeout_id = GLib.timeout_add(500, do_update)
 
     def on_user_changed(self, entry, *args):
-        log.info("[DEBUG] on_user_changed Triggered")
+        if debug:
+            log.info("[DEBUG] on_user_changed Triggered")
         from gi.repository import GLib
         # Cancel any pending timeout
         if self._user_change_timeout_id is not None:
@@ -279,7 +285,6 @@ class ContributionsActions(ActionCore):
             settings = self.get_settings()
             new_github_user = entry.get_text().strip()
             github_token = settings.get("github_token", "")
-            refresh_rate = int(settings.get("refresh_rate", "0"))
 
             settings["github_user"] = new_github_user
             self.set_settings(settings)
@@ -300,7 +305,8 @@ class ContributionsActions(ActionCore):
         self._user_change_timeout_id = GLib.timeout_add(500, do_update)
 
     def on_refresh_rate_changed(self, widget, value, old):
-        log.info("[DEBUG] on_refresh_rate_changed Triggered")
+        if debug:
+            log.info("[DEBUG] on_refresh_rate_changed Triggered")
         settings = self.get_settings()
         if hasattr(value, "get_value"):
             value = value.get_value()
@@ -332,7 +338,8 @@ class ContributionsActions(ActionCore):
             new_value=new_refresh_rate,
         )
 
-        log.info(f"[DEBUG] on_refresh_rate_changed: github_user={github_user}, github_token={github_token}, refresh_rate={new_refresh_rate}")
+        if debug:
+            log.info(f"[DEBUG] on_refresh_rate_changed: github_user={github_user}, github_token={github_token}, refresh_rate={new_refresh_rate}")
         self.start_refresh_timer()
 
 
@@ -368,9 +375,11 @@ class ContributionsActions(ActionCore):
             new_global["github_token"] = github_token
             new_global[field_name] = str(new_value)
             write_global_settings(new_global["github_user"], new_global["github_token"], int(new_global.get("refresh_rate", 0)))
-            log.info(f"[DEBUG] _write_global_if_changed: Wrote updated {field_name}={new_value} to global settings file")
+            if debug:
+                log.info(f"[DEBUG] _write_global_if_changed: Wrote updated {field_name}={new_value} to global settings file")
         else:
-            log.info(f"[DEBUG] _write_global_if_changed: {field_name}={new_value} unchanged, skipping write")
+            if debug:
+                log.info(f"[DEBUG] _write_global_if_changed: {field_name}={new_value} unchanged, skipping write")
 
 
     def clear_labels(self, status):
@@ -542,7 +551,8 @@ class ContributionsActions(ActionCore):
             github_token = settings.get("github_token", "")
             github_user = settings.get("github_user", "")
             refresh_rate = settings.get("refresh_rate", "0")
-            log.info(f"[DEBUG] Fetching contributions for {github_user} with token={bool(github_token)}, refresh_rate={refresh_rate}")
+            if debug:
+                log.info(f"[DEBUG] Fetching contributions for {github_user} with token={bool(github_token)}, refresh_rate={refresh_rate}")
 
             if not github_token or not github_user:
                 log.info("[DEBUG] No github_token or github_user, aborting fetch_and_display_contributions")
@@ -586,7 +596,8 @@ class ContributionsActions(ActionCore):
                             last_date_str = cached_last_date_str
 
             if cache_valid:
-                log.info("[CACHE] Using cached contributions data and images.")
+                if debug:
+                    log.info("[CACHE] Using cached contributions data and images.")
                 cache = ContributionsActions._contributions_cache[cache_key]
                 bimonthly_labels = cache["labels"]
                 bimonthly_images = cache["images"]
@@ -595,13 +606,15 @@ class ContributionsActions(ActionCore):
                 selected_month_key = self.get_settings().get("selected_month", None)
                 label_month_parts = [lbl.split(" (")[0] for lbl in bimonthly_labels]
                 if selected_month_key and selected_month_key not in label_month_parts:
-                    log.info("[CACHE] selected_month_key missing from bimonthly_labels, invalidating cache.")
+                    if debug:
+                        log.info("[CACHE] selected_month_key missing from bimonthly_labels, invalidating cache.")
                     cache_valid = False
                 elif last_date_str is not None:
                     last_date = datetime.strptime(last_date_str, "%Y-%m-%d")
                 else:
                     # Cache is invalid or corrupted, force a fresh fetch
-                    log.warning("[CACHE] last_date_str is None, forcing fresh fetch.")
+                    if debug:
+                        log.warning("[CACHE] last_date_str is None, forcing fresh fetch.")
                     cache_valid = False
 
             # After all cache checks, if cache_valid is still False, fetch from API
@@ -629,7 +642,8 @@ class ContributionsActions(ActionCore):
                 }
 
                 try:
-                    log.info(f"[API] Making GitHub contributions API call for button with refresh_rate: {refresh_rate}")
+                    if debug:
+                        log.info(f"[API] Making GitHub contributions API call for button with refresh_rate: {refresh_rate}")
                     response = requests.post(
                         "https://api.github.com/graphql",
                         json={"query": query, "variables": {"login": github_user}},
@@ -696,7 +710,8 @@ class ContributionsActions(ActionCore):
                         bimonthly_counts.append(count)
                         label = f"{start.strftime('%b').upper()}-{end.strftime('%b').upper()} ({count})"
                         bimonthly_labels.append(label)
-                        log.info(f"[DEBUG] Built label: {label} with count: {count} for idx: {idx}")
+                        if debug:
+                            log.info(f"[DEBUG] Built label: {label} with count: {count} for idx: {idx}")
                         # Always generate the image for the full period, even if all zeros
                         img_path = self.save_contributions_image(
                             cell_map, idx, plugin_path,
@@ -727,8 +742,9 @@ class ContributionsActions(ActionCore):
             self._quarter_images = bimonthly_images
             self._quarter_counts = bimonthly_counts
 
-            log.info(f"[DEBUG] All bimonthly_labels: {bimonthly_labels}")
-            log.info(f"[DEBUG] All bimonthly_counts: {bimonthly_counts}")
+            if debug:
+                log.info(f"[DEBUG] All bimonthly_labels: {bimonthly_labels}")
+                log.info(f"[DEBUG] All bimonthly_counts: {bimonthly_counts}")
 
             first_with_data = next(
                 ((lbl, img, cnt) for lbl, img, cnt in zip(bimonthly_labels, bimonthly_images, bimonthly_counts) if cnt > 0),
@@ -751,14 +767,16 @@ class ContributionsActions(ActionCore):
 
             def find_matching_label(key, labels):
                 for lbl in labels:
-                    log.info(f"[MY DEBUG] lbl: *{lbl}*, label_month_part: *{label_month_part(lbl)}*, selected_month_key: *{selected_month_key}*")
+                    if debug:
+                        log.info(f"[MY DEBUG] lbl: *{lbl}*, label_month_part: *{label_month_part(lbl)}*, selected_month_key: *{selected_month_key}*")
                     if label_month_part(lbl) == key:
                         return lbl
                 return None
 
             # Pull the selected month from the settings
             selected_month_key = self.get_settings().get("selected_month", None)
-            log.info(f"[MY DEBUG] selected_month_key: {selected_month_key}")
+            if debug:
+                log.info(f"[MY DEBUG] selected_month_key: {selected_month_key}")
 
             selected_label = None
             # Jump into this loop if the button was just created
@@ -774,7 +792,8 @@ class ContributionsActions(ActionCore):
                 if selected_month_key:
                     selected_label = find_matching_label(selected_month_key, bimonthly_labels)
 
-                log.info(f"[App was created] Selected label: {selected_label}")
+                if debug:
+                    log.info(f"[App was created] Selected label: {selected_label}")
 
                 if selected_label:
                     self.display_month_row.set_value(selected_label)
@@ -787,7 +806,8 @@ class ContributionsActions(ActionCore):
                     selected_label = find_matching_label(selected_month_key, bimonthly_labels)
 
                 if not selected_label:
-                    log.info("[MY DEBUG] No match found")
+                    if debug:
+                        log.info(f"[MY DEBUG] No match found")
                     rollover_found = False
                     # Try to detect rollover: e.g., if JUL-AUG is gone, look for AUG-SEP
                     if selected_month_key:  # Only try rollover if we have a previous selection
@@ -798,34 +818,41 @@ class ContributionsActions(ActionCore):
                             next_start_idx = end_idx
                             next_end_idx = (end_idx + 1) % 12
                             next_period = f"{months[next_start_idx]}-{months[next_end_idx]}"
-                            log.info(f"[MY DEBUG] Next period: {next_period}")
+                            if debug:
+                                log.info(f"[MY DEBUG] Next period: {next_period}")
                             for lbl in bimonthly_labels:
-                                log.info(f"[MY DEBUG] Checking label: {lbl}")
+                                if debug:
+                                    log.info(f"[MY DEBUG] Checking label: {lbl}")
                                 if lbl.startswith(next_period):
                                     selected_label = lbl
                                     settings["selected_month"] = next_period
                                     self.set_settings(settings)
-                                    log.info(f"[ROLLOVER] Detected rollover. Updated selected_month to {next_period}")
+                                    if debug:
+                                        log.info(f"[ROLLOVER] Detected rollover. Updated selected_month to {next_period}")
                                     rollover_found = True
                                     break
                         except Exception as e:
-                            log.warning(f"[ROLLOVER] Failed to parse or find rollover period: {e}")
+                            if debug:
+                                log.warning(f"[ROLLOVER] Failed to parse or find rollover period: {e}")
                     if not rollover_found or not selected_label:
                         selected_label = first_with_data[0] if first_with_data else bimonthly_labels[0]
                         settings["selected_month"] = selected_label.split(" (")[0]
                         self.set_settings(settings)
 
-            log.info(f"[DEBUG] Final selected_label: {selected_label}")
+            if debug:
+                log.info(f"[DEBUG] Final selected_label: {selected_label}")
 
             # Ensure img_path and count match the actual selected label
             idx = bimonthly_labels.index(selected_label)
             img_path = bimonthly_images[idx]
             count = bimonthly_counts[idx]
-            log.info(f"[DEBUG] Using idx: {idx}, img_path: {img_path}, count: {count} for selected_label: {selected_label}")
+            if debug:
+                log.info(f"[DEBUG] Using idx: {idx}, img_path: {img_path}, count: {count} for selected_label: {selected_label}")
 
             # Top label (count)
             if self.get_settings().get("show_top_label", True):
-                log.info(f"[DEBUG] Setting top label to count: {count}")
+                if debug:
+                    log.info(f"[DEBUG] Setting top label to count: {count}")
                 self.set_top_label(
                     f"{count}",
                     color=[100, 255, 100],
@@ -834,12 +861,14 @@ class ContributionsActions(ActionCore):
                     font_family="cantarell"
                 )
             else:
-                log.info("[DEBUG] Hiding top label")
+                if debug:
+                    log.info("[DEBUG] Hiding top label")
                 self.set_top_label(None)
 
             # Bottom label (month range)
             if self.get_settings().get("show_bottom_label", True):
-                log.info(f"[DEBUG] Setting bottom label to: {selected_label.split(' (')[0]}")
+                if debug:
+                    log.info(f"[DEBUG] Setting bottom label to: {selected_label.split(' (')[0]}")
                 self.set_bottom_label(
                     selected_label.split(" (")[0],
                     color=[100, 255, 100],
@@ -848,15 +877,18 @@ class ContributionsActions(ActionCore):
                     font_family="cantarell"
                 )
             else:
-                log.info("[DEBUG] Hiding bottom label")
+                if debug:
+                    log.info("[DEBUG] Hiding bottom label")
                 self.set_bottom_label(None)
 
             # Set contribution image
             if img_path:
-                log.info(f"[DEBUG] Setting media to img_path: {img_path}")
+                if debug:
+                    log.info(f"[DEBUG] Setting media to img_path: {img_path}")
                 self.set_media(media_path=img_path, size=0.68, valign=-.7)
             else:
-                log.info(f"[DEBUG] Setting media to default_media: {default_media}")
+                if debug:
+                    log.info(f"[DEBUG] Setting media to default_media: {default_media}")
                 self.set_media(media_path=default_media, size=0.9)
 
         except Exception as e:
