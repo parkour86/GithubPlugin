@@ -78,7 +78,7 @@ class ContributionsActions(ActionCore):
 
     def on_ready(self) -> None:
         time.sleep(0.2)
-        settings = self.plugin_base.get_settings()
+        settings = self.get_settings()
         selected_month = settings.get("selected_month", "")
         if debug:
             log.info(f"[DEBUG] on_ready: selected_month={selected_month}")
@@ -113,10 +113,10 @@ class ContributionsActions(ActionCore):
         # Placeholder for logic to clear or update UI
 
     def get_config_rows(self):
-        settings = self.plugin_base.get_settings()
-        github_token = settings.get("github_token", "")
-        github_user = settings.get("github_user", "")
-        refresh_rate = settings.get("refresh_rate", "0")
+        settings = self.get_settings()
+        github_token = self.plugin_base.get_settings().get("github_token", "")
+        github_user = self.plugin_base.get_settings().get("github_user", "")
+        refresh_rate = self.plugin_base.get_settings().get("refresh_rate", "0")
 
         # Token entry
         token_entry = Adw.EntryRow(title="GitHub Access Token")
