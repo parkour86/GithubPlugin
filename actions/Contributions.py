@@ -78,7 +78,7 @@ class ContributionsActions(ActionCore):
 
     def on_ready(self) -> None:
         time.sleep(0.2)
-        settings = self.get_settings()
+        settings = self.plugin_base.get_settings()
         selected_month = settings.get("selected_month", "")
         if debug:
             log.info(f"[DEBUG] on_ready: selected_month={selected_month}")
@@ -113,7 +113,7 @@ class ContributionsActions(ActionCore):
         # Placeholder for logic to clear or update UI
 
     def get_config_rows(self):
-        settings = self.get_settings()
+        settings = self.plugin_base.get_settings()
         github_token = settings.get("github_token", "")
         github_user = settings.get("github_user", "")
         refresh_rate = settings.get("refresh_rate", "0")
@@ -199,12 +199,12 @@ class ContributionsActions(ActionCore):
             self._token_change_timeout_id = None
 
         def do_update():
-            settings = self.get_settings()
+            settings = self.plugin_base.get_settings()
             new_github_token = entry.get_text().strip()
             github_user = settings.get("github_user", "")
 
             settings["github_token"] = new_github_token
-            self.set_settings(settings)
+            self.plugin_base.set_settings(settings)
 
             if github_user.strip():
                 self.fetch_and_display_contributions()
@@ -227,12 +227,12 @@ class ContributionsActions(ActionCore):
             self._user_change_timeout_id = None
 
         def do_update():
-            settings = self.get_settings()
+            settings = self.plugin_base.get_settings()
             new_github_user = entry.get_text().strip()
             github_token = settings.get("github_token", "")
 
             settings["github_user"] = new_github_user
-            self.set_settings(settings)
+            self.plugin_base.set_settings(settings)
 
             if github_token.strip():
                 self.fetch_and_display_contributions()
@@ -245,7 +245,7 @@ class ContributionsActions(ActionCore):
     def on_refresh_rate_changed(self, widget, value, old):
         if debug:
             log.info("[DEBUG] on_refresh_rate_changed Triggered")
-        settings = self.get_settings()
+        settings = self.plugin_base.get_settings()
         if hasattr(value, "get_value"):
             value = value.get_value()
         if value is not None:
@@ -253,9 +253,9 @@ class ContributionsActions(ActionCore):
         else:
             new_refresh_rate = int(settings.get("refresh_rate", "0"))
 
-        # Always update button's local settings immediately
+        # Always update plugin's settings immediately
         settings["refresh_rate"] = str(new_refresh_rate)
-        self.set_settings(settings)
+        self.plugin_base.set_settings(settings)
 
         if debug:
             log.info(f"[DEBUG] on_refresh_rate_changed: refresh_rate={new_refresh_rate}")
