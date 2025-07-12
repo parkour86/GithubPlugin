@@ -82,9 +82,10 @@ class ContributionsActions(ActionCore):
         selected_month = settings.get("selected_month", "")
         if debug:
             log.info(f"[DEBUG] on_ready: selected_month={selected_month}")
-        github_token = settings.get("github_token", "")
-        github_user = settings.get("github_user", "")
-        refresh_rate = int(settings.get("refresh_rate", "0"))
+        plugin_settings = self.plugin_base.get_settings()
+        github_token = plugin_settings.get("github_token", "")
+        github_user = plugin_settings.get("github_user", "")
+        refresh_rate = int(plugin_settings.get("refresh_rate", "0"))
 
         if debug:
             log.info(f"[DEBUG] on_ready settings: github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}")
@@ -199,12 +200,12 @@ class ContributionsActions(ActionCore):
             self._token_change_timeout_id = None
 
         def do_update():
-            settings = self.plugin_base.get_settings()
+            plugin_settings = self.plugin_base.get_settings()
             new_github_token = entry.get_text().strip()
-            github_user = settings.get("github_user", "")
+            github_user = plugin_settings.get("github_user", "")
 
-            settings["github_token"] = new_github_token
-            self.plugin_base.set_settings(settings)
+            plugin_settings["github_token"] = new_github_token
+            self.plugin_base.set_settings(plugin_settings)
 
             if github_user.strip():
                 self.fetch_and_display_contributions()
@@ -227,12 +228,12 @@ class ContributionsActions(ActionCore):
             self._user_change_timeout_id = None
 
         def do_update():
-            settings = self.plugin_base.get_settings()
+            plugin_settings = self.plugin_base.get_settings()
             new_github_user = entry.get_text().strip()
-            github_token = settings.get("github_token", "")
+            github_token = plugin_settings.get("github_token", "")
 
-            settings["github_user"] = new_github_user
-            self.plugin_base.set_settings(settings)
+            plugin_settings["github_user"] = new_github_user
+            self.plugin_base.set_settings(plugin_settings)
 
             if github_token.strip():
                 self.fetch_and_display_contributions()
@@ -245,17 +246,17 @@ class ContributionsActions(ActionCore):
     def on_refresh_rate_changed(self, widget, value, old):
         if debug:
             log.info("[DEBUG] on_refresh_rate_changed Triggered")
-        settings = self.plugin_base.get_settings()
+        plugin_settings = self.plugin_base.get_settings()
         if hasattr(value, "get_value"):
             value = value.get_value()
         if value is not None:
             new_refresh_rate = int(value)
         else:
-            new_refresh_rate = int(settings.get("refresh_rate", "0"))
+            new_refresh_rate = int(plugin_settings.get("refresh_rate", "0"))
 
         # Always update plugin's settings immediately
-        settings["refresh_rate"] = str(new_refresh_rate)
-        self.plugin_base.set_settings(settings)
+        plugin_settings["refresh_rate"] = str(new_refresh_rate)
+        self.plugin_base.set_settings(plugin_settings)
 
         if debug:
             log.info(f"[DEBUG] on_refresh_rate_changed: refresh_rate={new_refresh_rate}")
@@ -428,9 +429,10 @@ class ContributionsActions(ActionCore):
 
         try:
             settings = self.get_settings()
-            github_token = settings.get("github_token", "")
-            github_user = settings.get("github_user", "")
-            refresh_rate = settings.get("refresh_rate", "0")
+            plugin_settings = self.plugin_base.get_settings()
+            github_token = plugin_settings.get("github_token", "")
+            github_user = plugin_settings.get("github_user", "")
+            refresh_rate = plugin_settings.get("refresh_rate", "0")
             if debug:
                 log.info(f"[DEBUG] Fetching contributions for {github_user} with token={bool(github_token)}, refresh_rate={refresh_rate}")
 
@@ -446,7 +448,7 @@ class ContributionsActions(ActionCore):
             cache_key = None
             last_date_str = None
             cache_valid = False
-            refresh_rate = settings.get("refresh_rate", "0")
+            refresh_rate = plugin_settings.get("refresh_rate", "0")
             try:
                 refresh_rate = int(refresh_rate)
             except Exception:
