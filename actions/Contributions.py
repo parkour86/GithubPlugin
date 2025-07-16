@@ -99,7 +99,6 @@ class ContributionsActions(ActionCore):
             self.set_top_label("\nConfigure\nGithub\nPlugin", color=[255, 100, 100], outline_width=1, font_size=17)
         self.start_refresh_timer()
 
-
     def on_key_down(self) -> None:
         settings = self.get_settings()
         github_user = settings.get("github_user", "")
@@ -347,18 +346,6 @@ class ContributionsActions(ActionCore):
             current_end = current_start - relativedelta(days=1)
         return ranges
 
-    # def get_color(self, count):
-    #     # GitHub-like color scale
-    #     if count == 0:
-    #         return "#3d444d" # "#ebedf0"
-    #     elif count < 8:
-    #         return "#c6e48b"
-    #     elif count < 15:
-    #         return "#7bc96f"
-    #     elif count < 22:
-    #         return "#239a3b"
-    #     else:
-    #         return "#196127"
     def get_color(self, count):
         if count == 0:
             return "#3d444d"  # dark gray (inactive)
@@ -784,10 +771,6 @@ class ContributionsActions(ActionCore):
             log.error(f"[DEBUG] github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}, settings={settings}, cache_params={getattr(ContributionsActions, '_cache_params', None)}")
             log.error(traceback.format_exc())
 
-#
-
-
-
     def start_refresh_timer(self):
         try:
             from gi.repository import GLib
@@ -826,8 +809,6 @@ class ContributionsActions(ActionCore):
             self._refresh_timer_id = GLib.timeout_add_seconds(refresh_rate * 3600, _timer_callback)
             # Refresh rate interval in minutes
             #self._refresh_timer_id = GLib.timeout_add_seconds(refresh_rate * 60, _timer_callback)
-            #
-            #
 
         except Exception:
             self._refresh_timer_id = None
