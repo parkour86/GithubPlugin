@@ -185,8 +185,6 @@ class ContributionsActions(ActionCore):
             show_bottom_label_row,
         ]
 
-
-
     def on_token_changed(self, entry, *args):
         if debug:
             log.info("[DEBUG] on_token_changed Triggered")
@@ -201,10 +199,8 @@ class ContributionsActions(ActionCore):
 
         def do_update():
             plugin_settings = self.plugin_base.get_settings()
-            new_github_token = entry.get_text().strip()
+            plugin_settings["github_token"] = entry.get_text().strip()
             github_user = plugin_settings.get("github_user", "")
-
-            plugin_settings["github_token"] = new_github_token
             self.plugin_base.set_settings(plugin_settings)
 
             if github_user.strip():
@@ -229,10 +225,8 @@ class ContributionsActions(ActionCore):
 
         def do_update():
             plugin_settings = self.plugin_base.get_settings()
-            new_github_user = entry.get_text().strip()
+            plugin_settings["github_user"] = entry.get_text().strip()
             github_token = plugin_settings.get("github_token", "")
-
-            plugin_settings["github_user"] = new_github_user
             self.plugin_base.set_settings(plugin_settings)
 
             if github_token.strip():

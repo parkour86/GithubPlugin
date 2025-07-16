@@ -25,10 +25,12 @@ class PullRequestsActions(ActionBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._refresh_timer_id = None  # For periodic refresh
+        self._token_change_timeout_id = None
+        self._repo_url_change_timeout_id = None
 
     def on_ready(self) -> None:
         settings = self.get_settings()
-        github_token = settings.get("github_token", "")
+        github_token = self.plugin_base.get_settings().get("github_token", "")
         repo_url = settings.get("repo_url", "")
         if github_token and repo_url and repo_url.startswith("https://github.com/"):
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
@@ -58,7 +60,7 @@ class PullRequestsActions(ActionBase):
 
     def get_config_rows(self):
         settings = self.get_settings()
-        github_token = settings.get("github_token", "")
+        github_token = self.plugin_base.get_settings().get("github_token", "")
         repo_url = settings.get("repo_url", "")
         refresh_rate = settings.get("refresh_rate", "0")
 
@@ -87,18 +89,46 @@ class PullRequestsActions(ActionBase):
         return [token_entry, repo_entry, refresh_rate_row.widget]
 
     def on_token_changed(self, entry, *args):
-        settings = self.get_settings()
-        settings["github_token"] = entry.get_text()
-        self.set_settings(settings)
-        #owner, repo = self.parse_owner_repo(settings.get("repo_url", ""))
-        self.fetch_and_display_pull_request_count()
+        try:
+            from gi.repository import GLib
+        except ImportError:
+            self.fetch_and_display_pull_request_count()
+            return
+
+        if self._token_change_timeout_id is not None:
+            GLib.source_remove(self._token_change_timeout_id)
+            self._token_change_timeout_id = None
+
+        def do_update():
+            plugin_settings = self.plugin_base.get_settings()
+            plugin_settings["github_token"] = entry.get_text().strip()
+            self.plugin_base.set_settings(plugin_settings)
+            self.fetch_and_display_pull_request_count()
+            self._token_change_timeout_id = None
+            return False  # Only run once
+
+        self._token_change_timeout_id = GLib.timeout_add(500, do_update)
 
     def on_repo_url_changed(self, entry, *args):
-        settings = self.get_settings()
-        settings["repo_url"] = entry.get_text()
-        self.set_settings(settings)
-        #owner, repo = self.parse_owner_repo(settings.get("repo_url", ""))
-        self.fetch_and_display_pull_request_count()
+        try:
+            from gi.repository import GLib
+        except ImportError:
+            self.fetch_and_display_pull_request_count()
+            return
+
+        if self._repo_url_change_timeout_id is not None:
+            GLib.source_remove(self._repo_url_change_timeout_id)
+            self._repo_url_change_timeout_id = None
+
+        def do_update():
+            settings = self.get_settings()
+            settings["repo_url"] = entry.get_text().strip()
+            self.set_settings(settings)
+            self.fetch_and_display_pull_request_count()
+            self._repo_url_change_timeout_id = None
+            return False  # Only run once
+
+        self._repo_url_change_timeout_id = GLib.timeout_add(500, do_update)
 
     def parse_owner_repo(self, repo_url):
         import re
@@ -135,8 +165,8 @@ class PullRequestsActions(ActionBase):
         default_media = os.path.join(self.plugin_base.PATH, "assets", "info.png")
 
         try:
+            github_token = self.plugin_base.get_settings().get("github_token", "")
             settings = self.get_settings()
-            github_token = settings.get("github_token", "")
             repo_url = settings.get("repo_url", "")
             owner, repo = self.parse_owner_repo(repo_url)
             log.info(f"[DEBUG] Fetching pull requests for {owner}/{repo}")
@@ -200,7 +230,7 @@ class PullRequestsActions(ActionBase):
     def fetch_and_set_commit_status_icons(self, owner, repo, shas):
         import requests
         headers = {
-            "Authorization": f"token {self.get_settings().get('github_token', '')}",
+            "Authorization": f"token {self.plugin_base.get_settings().get('github_token', '')}",
             "Accept": "application/vnd.github.v3+json"
         }
 
