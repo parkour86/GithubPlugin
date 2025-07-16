@@ -75,6 +75,7 @@ class ContributionsActions(ActionCore):
         self._user_change_timeout_id = None
         self._refresh_timer_id = None  # For periodic refresh
         self._debounce_timers = {} # For periodic write of github_user, github_token, refresh_rate
+        self._last_settings = None
 
     def on_ready(self) -> None:
         time.sleep(0.2)
@@ -108,6 +109,12 @@ class ContributionsActions(ActionCore):
             webbrowser.open(url)
         else:
             log.warning("Contributions: Cannot open user page, username missing.")
+
+    def on_tick(self):
+        current_settings = self.plugin_base.get_settings().copy()
+        if current_settings != self._last_settings:
+            self._last_settings = current_settings
+            self.fetch_and_display_contributions()
 
     def on_key_up(self) -> None:
         log.info("Contributions: Key up event triggered")

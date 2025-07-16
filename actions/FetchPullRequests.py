@@ -27,6 +27,7 @@ class PullRequestsActions(ActionBase):
         self._refresh_timer_id = None  # For periodic refresh
         self._token_change_timeout_id = None
         self._repo_url_change_timeout_id = None
+        self._last_settings = None
 
     def on_ready(self) -> None:
         settings = self.get_settings()
@@ -138,6 +139,12 @@ class PullRequestsActions(ActionBase):
             repo = match.group(2).removesuffix(".git")
             return owner, repo
         return "", ""
+
+    def on_tick(self):
+        current_settings = self.plugin_base.get_settings().copy()
+        if current_settings != self._last_settings:
+            self._last_settings = current_settings
+            self.fetch_and_display_pull_request_count()
 
     def on_refresh_rate_changed(self, widget, value, old):
         settings = self.get_settings()
