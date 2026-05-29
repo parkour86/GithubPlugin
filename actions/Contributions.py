@@ -65,10 +65,12 @@ class ContributionsActions(ActionCore):
         return weeks
 
     # ---- CLASS-LEVEL CACHE ----
-    # Keyed by (github_user, github_token, last_date_str)
+    # _contributions_cache keyed by (github_user, github_token, last_date_str)
+    # _cache_timestamp and _cache_params keyed by (github_user, github_token) so
+    # multiple button instances with different users don't evict each other.
     _contributions_cache = {}
-    _cache_timestamp = None
-    _cache_params = None
+    _cache_timestamp = {}   # (github_user, github_token) -> float
+    _cache_params = {}      # (github_user, github_token) -> (last_date_str, refresh_rate)
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._token_change_timeout_id = None
@@ -89,7 +91,7 @@ class ContributionsActions(ActionCore):
         refresh_rate = int(plugin_settings.get("refresh_rate", "0"))
 
         if debug:
-            log.info(f"[DEBUG] on_ready settings: github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}")
+            log.info(f"[DEBUG] on_ready settings: github_token={github_token[:13]}..., github_user={github_user}, refresh_rate={refresh_rate}")
 
         if github_token and github_user:
             self.fetch_and_display_contributions()
@@ -448,26 +450,21 @@ class ContributionsActions(ActionCore):
 
             # We'll determine last_date after API call or from cache
             # But first, check if we have a cache for this user/token/period
-            cache_params = ContributionsActions._cache_params
-            cache_timestamp = ContributionsActions._cache_timestamp
             now = time.time()
+            instance_key = (github_user, github_token)
+            cache_params = ContributionsActions._cache_params.get(instance_key)
+            cache_timestamp = ContributionsActions._cache_timestamp.get(instance_key)
 
-            # If cache_params exist, check if they match
-            cached_user = cached_token = cached_last_date_str = None
             if cache_params is not None:
-                if len(cache_params) == 4:
-                    cached_user, cached_token, cached_last_date_str, _ = cache_params
-                elif len(cache_params) == 3:
-                    cached_user, cached_token, cached_last_date_str = cache_params
-                if cached_user == github_user and cached_token == github_token:
-                    # If refresh_rate is 0, always use cache if available (never refresh from API)
-                    # If refresh_rate > 0, use cache only if not expired
-                    if ((refresh_rate == 0 and cache_timestamp is not None) or
-                        (refresh_rate > 0 and cache_timestamp is not None and (now - cache_timestamp) < refresh_rate * 3600)):
-                        cache_key = (github_user, github_token, cached_last_date_str)
-                        if cache_key in ContributionsActions._contributions_cache:
-                            cache_valid = True
-                            last_date_str = cached_last_date_str
+                cached_last_date_str, _ = cache_params
+                # If refresh_rate is 0, always use cache if available (never refresh from API)
+                # If refresh_rate > 0, use cache only if not expired
+                if ((refresh_rate == 0 and cache_timestamp is not None) or
+                    (refresh_rate > 0 and cache_timestamp is not None and (now - cache_timestamp) < refresh_rate * 3600)):
+                    cache_key = (github_user, github_token, cached_last_date_str)
+                    if cache_key in ContributionsActions._contributions_cache:
+                        cache_valid = True
+                        last_date_str = cached_last_date_str
 
             if cache_valid:
                 if debug:
@@ -601,8 +598,8 @@ class ContributionsActions(ActionCore):
                         "images": bimonthly_images,
                         "counts": bimonthly_counts,
                     }
-                    ContributionsActions._cache_timestamp = now
-                    ContributionsActions._cache_params = (github_user, github_token, last_date_str, refresh_rate)
+                    ContributionsActions._cache_timestamp[instance_key] = now
+                    ContributionsActions._cache_params[instance_key] = (last_date_str, refresh_rate)
 
                 except Exception as e:
                     self.clear_labels("error")
@@ -773,7 +770,7 @@ class ContributionsActions(ActionCore):
             self.set_media(media_path=default_media, size=0.9)
             self.set_background_color(color=[255, 255, 255, 255], update=True)
             log.error(f"[DEBUG] API Internal Error:{e}", exc_info=True)
-            log.error(f"[DEBUG] github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}, settings={settings}, cache_params={getattr(ContributionsActions, '_cache_params', None)}")
+            log.error(f"[DEBUG] github_token={github_token[:13]}..., github_user={github_user}, refresh_rate={refresh_rate}, settings={settings}, cache_params={ContributionsActions._cache_params.get((github_user, github_token))}")
             log.error(traceback.format_exc())
 
     def start_refresh_timer(self):
