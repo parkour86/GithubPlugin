@@ -91,7 +91,7 @@ class ContributionsActions(ActionCore):
         refresh_rate = int(plugin_settings.get("refresh_rate", "0"))
 
         if debug:
-            log.info(f"[DEBUG] on_ready settings: github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}")
+            log.info(f"[DEBUG] on_ready settings: github_token={github_token[:13]}..., github_user={github_user}, refresh_rate={refresh_rate}")
 
         if github_token and github_user:
             self.fetch_and_display_contributions()
@@ -770,7 +770,7 @@ class ContributionsActions(ActionCore):
             self.set_media(media_path=default_media, size=0.9)
             self.set_background_color(color=[255, 255, 255, 255], update=True)
             log.error(f"[DEBUG] API Internal Error:{e}", exc_info=True)
-            log.error(f"[DEBUG] github_token={github_token}, github_user={github_user}, refresh_rate={refresh_rate}, settings={settings}, cache_params={ContributionsActions._cache_params.get((github_user, github_token))}")
+            log.error(f"[DEBUG] github_token={github_token[:13]}..., github_user={github_user}, refresh_rate={refresh_rate}, settings={settings}, cache_params={ContributionsActions._cache_params.get((github_user, github_token))}")
             log.error(traceback.format_exc())
 
     def start_refresh_timer(self):
