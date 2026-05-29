@@ -97,10 +97,11 @@ class ContributionsActions(ActionCore):
             self.clear_labels("error")
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
             self.set_top_label("\nConfigure\nGithub\nPlugin", color=[255, 100, 100], outline_width=1, font_size=17)
+        self._last_settings = self.plugin_base.get_settings().copy()
         self.start_refresh_timer()
 
     def on_key_down(self) -> None:
-        settings = self.get_settings()
+        settings = self.plugin_base.get_settings()
         github_user = settings.get("github_user", "")
         if github_user:
             import webbrowser
@@ -121,9 +122,10 @@ class ContributionsActions(ActionCore):
 
     def get_config_rows(self):
         settings = self.get_settings()
-        github_token = self.plugin_base.get_settings().get("github_token", "")
-        github_user = self.plugin_base.get_settings().get("github_user", "")
-        refresh_rate = self.plugin_base.get_settings().get("refresh_rate", "0")
+        plugin_settings = self.plugin_base.get_settings()
+        github_token = plugin_settings.get("github_token", "")
+        github_user = plugin_settings.get("github_user", "")
+        refresh_rate = plugin_settings.get("refresh_rate", "0")
 
         # Token entry
         token_entry = Adw.EntryRow(title="GitHub Access Token")
@@ -208,6 +210,7 @@ class ContributionsActions(ActionCore):
             plugin_settings["github_token"] = entry.get_text().strip()
             github_user = plugin_settings.get("github_user", "")
             self.plugin_base.set_settings(plugin_settings)
+            self._last_settings = self.plugin_base.get_settings().copy()
 
             if github_user.strip():
                 self.fetch_and_display_contributions()
@@ -234,6 +237,7 @@ class ContributionsActions(ActionCore):
             plugin_settings["github_user"] = entry.get_text().strip()
             github_token = plugin_settings.get("github_token", "")
             self.plugin_base.set_settings(plugin_settings)
+            self._last_settings = self.plugin_base.get_settings().copy()
 
             if github_token.strip():
                 self.fetch_and_display_contributions()
@@ -786,7 +790,7 @@ class ContributionsActions(ActionCore):
             self._refresh_timer_id = None
 
         # Get refresh_rate from settings
-        settings = self.get_settings()
+        settings = self.plugin_base.get_settings()
         refresh_rate = settings.get("refresh_rate", "0")
         try:
             refresh_rate = int(refresh_rate)
