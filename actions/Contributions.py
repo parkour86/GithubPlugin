@@ -362,7 +362,7 @@ class ContributionsActions(ActionCore):
         else:
             return "#a3d9a5"  # light muted green
 
-    def save_contributions_image(self, cell_map, quarter_idx, plugin_path, period_start, period_end):
+    def save_contributions_image(self, cell_map, quarter_idx, plugin_path, period_start, period_end, github_user=""):
         """
         Draws a contribution image for the given period.
         Always shows all weeks (Sunday to Saturday) covering the period.
@@ -404,7 +404,7 @@ class ContributionsActions(ActionCore):
                 draw.rectangle(box, fill=color)
                 draw.rectangle(box, outline="#777777", width=1)
 
-        img_path = os.path.join(plugin_path, f"contributions_img{quarter_idx+1}.png")
+        img_path = os.path.join(plugin_path, f"contributions_img_{github_user}_{quarter_idx+1}.png")
         img.save(img_path)
         return img_path
 
@@ -589,7 +589,8 @@ class ContributionsActions(ActionCore):
                         # Always generate the image for the full period, even if all zeros
                         img_path = self.save_contributions_image(
                             cell_map, idx, plugin_path,
-                            period_start=start, period_end=end
+                            period_start=start, period_end=end,
+                            github_user=github_user
                         )
                         bimonthly_images.append(img_path)
 
