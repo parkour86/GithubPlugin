@@ -64,6 +64,10 @@ class ContributionsActions(ActionCore):
         weeks.sort(key=lambda w: w['contributionDays'][0]['date'])
         return weeks
 
+    # Serialises concurrent read-modify-write cycles in settings handlers so two
+    # debounce callbacks firing close together cannot clobber each other's key.
+    _settings_lock = threading.Lock()
+
     # ---- CLASS-LEVEL CACHE ----
     # _contributions_cache keyed by (github_user, github_token, last_date_str)
     # _cache_timestamp and _cache_params keyed by (github_user, github_token) so
@@ -208,10 +212,11 @@ class ContributionsActions(ActionCore):
             self._token_change_timeout_id = None
 
         def do_update():
-            plugin_settings = self.plugin_base.get_settings()
-            plugin_settings["github_token"] = entry.get_text().strip()
-            github_user = plugin_settings.get("github_user", "")
-            self.plugin_base.set_settings(plugin_settings)
+            with ContributionsActions._settings_lock:
+                plugin_settings = self.plugin_base.get_settings()
+                plugin_settings["github_token"] = entry.get_text().strip()
+                github_user = plugin_settings.get("github_user", "")
+                self.plugin_base.set_settings(plugin_settings)
             self._last_settings = self.plugin_base.get_settings().copy()
 
             if github_user.strip():
@@ -235,10 +240,11 @@ class ContributionsActions(ActionCore):
             self._user_change_timeout_id = None
 
         def do_update():
-            plugin_settings = self.plugin_base.get_settings()
-            plugin_settings["github_user"] = entry.get_text().strip()
-            github_token = plugin_settings.get("github_token", "")
-            self.plugin_base.set_settings(plugin_settings)
+            with ContributionsActions._settings_lock:
+                plugin_settings = self.plugin_base.get_settings()
+                plugin_settings["github_user"] = entry.get_text().strip()
+                github_token = plugin_settings.get("github_token", "")
+                self.plugin_base.set_settings(plugin_settings)
             self._last_settings = self.plugin_base.get_settings().copy()
 
             if github_token.strip():
