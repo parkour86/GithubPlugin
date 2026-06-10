@@ -712,8 +712,8 @@ class ContributionsActions(ActionCore):
                             start, end = selected_month_key.split('-')
                             months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
                             end_idx = months.index(end.upper())
-                            next_start_idx = end_idx
-                            next_end_idx = (end_idx + 1) % 12
+                            next_start_idx = (end_idx + 1) % 12
+                            next_end_idx = (end_idx + 2) % 12
                             next_period = f"{months[next_start_idx]}-{months[next_end_idx]}"
                             if debug:
                                 log.info(f"[MY DEBUG] Next period: {next_period}")
