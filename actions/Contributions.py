@@ -82,6 +82,7 @@ class ContributionsActions(ActionCore):
         self._refresh_timer_id = None  # For periodic refresh
         self._debounce_timers = {} # For periodic write of github_user, github_token, refresh_rate
         self._last_settings = None
+        self._fetch_lock = threading.Lock()
 
     def on_ready(self) -> None:
         settings = self.get_settings()
@@ -422,6 +423,19 @@ class ContributionsActions(ActionCore):
         return img_path
 
     def fetch_and_display_contributions(self):
+        if not self._fetch_lock.acquire(blocking=False):
+            if debug:
+                log.info("[DEBUG] fetch_and_display_contributions: fetch already in progress, skipping.")
+            return
+        threading.Thread(target=self._fetch_and_display_worker, daemon=True).start()
+
+    def _fetch_and_display_worker(self):
+        try:
+            self._do_fetch_and_display()
+        finally:
+            self._fetch_lock.release()
+
+    def _do_fetch_and_display(self):
         # Common red label parameters
         red = [255, 100, 100]
         kwargs = {"color": red, "outline_width": 1, "font_size": 17, "font_family": "cantarell"}
