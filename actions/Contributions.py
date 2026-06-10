@@ -267,7 +267,10 @@ class ContributionsActions(ActionCore):
         try:
             new_refresh_rate = int(value) if value is not None else int(plugin_settings.get("refresh_rate", "0"))
         except (ValueError, TypeError):
-            new_refresh_rate = int(plugin_settings.get("refresh_rate", "0"))
+            try:
+                new_refresh_rate = int(plugin_settings.get("refresh_rate", "0"))
+            except (ValueError, TypeError):
+                new_refresh_rate = 0
 
         # Always update plugin's settings immediately
         plugin_settings["refresh_rate"] = str(new_refresh_rate)
