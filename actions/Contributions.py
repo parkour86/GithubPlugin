@@ -491,9 +491,7 @@ class ContributionsActions(ActionCore):
                     if debug:
                         log.info("[CACHE] selected_month_key missing from bimonthly_labels, invalidating cache.")
                     cache_valid = False
-                elif last_date_str is not None:
-                    last_date = datetime.strptime(last_date_str, "%Y-%m-%d")
-                else:
+                elif last_date_str is None:
                     # Cache is invalid or corrupted, force a fresh fetch
                     if debug:
                         log.warning("[CACHE] last_date_str is None, forcing fresh fetch.")
