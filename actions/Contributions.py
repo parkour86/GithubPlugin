@@ -599,6 +599,14 @@ class ContributionsActions(ActionCore):
                         )
                         bimonthly_images.append(img_path)
 
+                    # Evict the previous cache entry for this instance before writing the new one.
+                    # last_date_str changes daily, so without eviction old keys accumulate forever.
+                    old_params = ContributionsActions._cache_params.get(instance_key)
+                    if old_params:
+                        old_last_date_str, _ = old_params
+                        old_key = (github_user, github_token, old_last_date_str)
+                        ContributionsActions._contributions_cache.pop(old_key, None)
+
                     # Save to cache
                     cache_key = (github_user, github_token, last_date_str)
                     ContributionsActions._contributions_cache[cache_key] = {
