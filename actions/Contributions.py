@@ -92,7 +92,10 @@ class ContributionsActions(ActionCore):
         plugin_settings = self.plugin_base.get_settings()
         github_token = plugin_settings.get("github_token", "")
         github_user = plugin_settings.get("github_user", "")
-        refresh_rate = int(plugin_settings.get("refresh_rate", "0"))
+        try:
+            refresh_rate = int(plugin_settings.get("refresh_rate", "0"))
+        except (ValueError, TypeError):
+            refresh_rate = 0
 
         if debug:
             log.info(f"[DEBUG] on_ready settings: github_token={github_token[:13]}..., github_user={github_user}, refresh_rate={refresh_rate}")
