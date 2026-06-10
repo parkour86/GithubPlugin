@@ -438,9 +438,8 @@ class ContributionsActions(ActionCore):
             plugin_settings = self.plugin_base.get_settings()
             github_token = plugin_settings.get("github_token", "")
             github_user = plugin_settings.get("github_user", "")
-            refresh_rate = plugin_settings.get("refresh_rate", "0")
             if debug:
-                log.info(f"[DEBUG] Fetching contributions for {github_user} with token={bool(github_token)}, refresh_rate={refresh_rate}")
+                log.info(f"[DEBUG] Fetching contributions for {github_user} with token={bool(github_token)}")
 
             if not github_token or not github_user:
                 log.info("[DEBUG] No github_token or github_user, aborting fetch_and_display_contributions")
