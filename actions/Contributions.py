@@ -84,7 +84,6 @@ class ContributionsActions(ActionCore):
         self._last_settings = None
 
     def on_ready(self) -> None:
-        time.sleep(0.2)
         settings = self.get_settings()
         selected_month = settings.get("selected_month", "")
         if debug:
