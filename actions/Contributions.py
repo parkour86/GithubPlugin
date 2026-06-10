@@ -666,7 +666,7 @@ class ContributionsActions(ActionCore):
                 for lbl in labels:
                     if debug:
                         log.info(f"[MY DEBUG] lbl: *{lbl}*, label_month_part: *{label_month_part(lbl)}*, selected_month_key: *{selected_month_key}*")
-                    if label_month_part(lbl) == key:
+                    if label_month_part(lbl).upper() == key.upper():
                         return lbl
                 return None
 
