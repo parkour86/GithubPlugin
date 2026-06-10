@@ -483,6 +483,13 @@ class ContributionsActions(ActionCore):
                 bimonthly_labels = cache["labels"]
                 bimonthly_images = cache["images"]
                 bimonthly_counts = cache["counts"]
+                # Invalidate cache if any image file no longer exists on disk
+                if any(img and not os.path.exists(img) for img in bimonthly_images):
+                    if debug:
+                        log.info("[CACHE] One or more cached image paths are missing, invalidating cache.")
+                    ContributionsActions._contributions_cache.pop(cache_key, None)
+                    cache_valid = False
+
                 # Invalidate cache if selected_month_key is missing from bimonthly_labels
                 selected_month_key = self.get_settings().get("selected_month", None)
                 label_month_parts = [lbl.split(" (")[0] for lbl in bimonthly_labels]
