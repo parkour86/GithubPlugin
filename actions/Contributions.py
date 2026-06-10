@@ -827,6 +827,7 @@ class ContributionsActions(ActionCore):
         try:
             from gi.repository import GLib
             if self._refresh_timer_id is not None:
-                GLib.source_remove(self._refresh_timer_id)
+                timer_id = self._refresh_timer_id
+                GLib.idle_add(GLib.source_remove, timer_id)
         except Exception:
             pass
