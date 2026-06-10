@@ -426,6 +426,10 @@ class ContributionsActions(ActionCore):
         bimonthly_labels = []
         bimonthly_images = []
         bimonthly_counts = []
+        settings = {}
+        github_token = ""
+        github_user = ""
+        refresh_rate = "0"
 
         try:
             settings = self.get_settings()
