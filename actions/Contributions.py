@@ -642,7 +642,9 @@ class ContributionsActions(ActionCore):
                 log.info(f"[DEBUG] All bimonthly_counts: {bimonthly_counts}")
 
             first_with_data = next(
-                ((lbl, img, cnt) for lbl, img, cnt in zip(bimonthly_labels, bimonthly_images, bimonthly_counts) if cnt > 0),
+                ((lbl, img, cnt) for lbl, img, cnt in zip(
+                    reversed(bimonthly_labels), reversed(bimonthly_images), reversed(bimonthly_counts)
+                ) if cnt > 0),
                 (None, None, None)
             )
 
