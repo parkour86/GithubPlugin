@@ -331,28 +331,29 @@ class ContributionsActions(ActionCore):
                 img_path = filtered_images[idx]
                 count = filtered_counts[idx]
                 if img_path:
-                    self.set_media(media_path=img_path, size=0.68, valign=-.7)
+                    self.set_media(media_path=img_path, size=0.68, valign=0.3)  # adjust valign to taste
 
-                # ✅ Update the top label (contribution count) for the selected period
+                # Top label: date range
                 show_top_label = settings.get("show_top_label", True)
                 if show_top_label:
                     self.set_top_label(
-                        f"{count}",
+                        selected_label.split(" (")[0],
                         color=[100, 255, 100],
-                        outline_width=4,
-                        font_size=18,
+                        outline_width=2,
+                        font_size=13,
                         font_family="cantarell"
                     )
                 else:
                     self.set_top_label(None)
 
+                # Bottom label: contribution count
                 show_bottom_label = settings.get("show_bottom_label", True)
                 if show_bottom_label:
                     self.set_bottom_label(
-                        selected_label.split(" (")[0],
+                        f"{count}",
                         color=[100, 255, 100],
-                        outline_width=2,
-                        font_size=14,
+                        outline_width=3,
+                        font_size=16,
                         font_family="cantarell"
                     )
                 else:
@@ -792,15 +793,15 @@ class ContributionsActions(ActionCore):
                     f"selected_label={selected_label}, img_path={img_path}"
                 )
 
-            # Top label (count)
+            # Top label (date range)
             if self.get_settings().get("show_top_label", True):
                 if debug:
-                    log.info(f"[DEBUG] Setting top label to count: {count}")
+                    log.info(f"[DEBUG] Setting top label to date range: {selected_label.split(' (')[0]}")
                 self.set_top_label(
-                    f"{count}",
+                    selected_label.split(" (")[0],
                     color=[100, 255, 100],
-                    outline_width=4,
-                    font_size=18,
+                    outline_width=2,
+                    font_size=13,
                     font_family="cantarell"
                 )
             else:
@@ -808,15 +809,15 @@ class ContributionsActions(ActionCore):
                     log.info("[DEBUG] Hiding top label")
                 self.set_top_label(None)
 
-            # Bottom label (month range)
+            # Bottom label (contribution count)
             if self.get_settings().get("show_bottom_label", True):
                 if debug:
-                    log.info(f"[DEBUG] Setting bottom label to: {selected_label.split(' (')[0]}")
+                    log.info(f"[DEBUG] Setting bottom label to count: {count}")
                 self.set_bottom_label(
-                    selected_label.split(" (")[0],
+                    f"{count}",
                     color=[100, 255, 100],
-                    outline_width=2,
-                    font_size=14,
+                    outline_width=3,
+                    font_size=16,
                     font_family="cantarell"
                 )
             else:
@@ -828,7 +829,7 @@ class ContributionsActions(ActionCore):
             if img_path:
                 if debug:
                     log.info(f"[DEBUG] Setting media to img_path: {img_path}")
-                self.set_media(media_path=img_path, size=0.68, valign=-.7)
+                self.set_media(media_path=img_path, size=0.68, valign=0.3)  # adjust valign to taste
             else:
                 if debug:
                     log.info(f"[DEBUG] Setting media to default_media: {default_media}")
