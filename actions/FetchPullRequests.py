@@ -205,7 +205,7 @@ class PullRequestsActions(ActionBase):
                     self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
                     # Extract SHAs and check commit statuses only if there are PRs
                     if pr_count > 0:
-                        shas = [pr["head"]["sha"] for pr in pulls if "head" in pr and "sha" in pr["head"]]
+                        shas = [pr["head"]["sha"] for pr in pulls if isinstance(pr.get("head"), dict) and "sha" in pr["head"]]
                         self.fetch_and_set_commit_status_icons(owner, repo, shas)
                 else:
                     self.clear_labels("error")
