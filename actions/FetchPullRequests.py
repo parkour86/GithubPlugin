@@ -170,6 +170,9 @@ class PullRequestsActions(ActionBase):
             self.set_background_color(color=[255, 255, 255, 255], update=True)
 
     def fetch_and_display_pull_request_count(self):
+        self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
+        self.set_center_label("Loading...", color=[232, 232, 232], outline_width=1, font_size=14, font_family="cantarell")
+        self.set_bottom_label(None)
         t = threading.Thread(target=self._fetch_worker, daemon=True)
         t.start()
 
@@ -206,27 +209,48 @@ class PullRequestsActions(ActionBase):
             }
 
             try:
-                response = requests.get(url, headers=headers, params={"per_page": 100}, timeout=10)
-                status = response.status_code
+                # First 25 most recently updated PRs — used for CI status checks
+                first_response = requests.get(url, headers=headers, params={"per_page": 25, "state": "open"}, timeout=10)
+                status = first_response.status_code
 
                 if status == 200:
-                    pulls = response.json()
-                    pr_count = len(pulls)
+                    first_page = first_response.json()
+
+                    # Count all pages for the total
+                    pr_count = len(first_page)
+                    next_url = None
+                    link = first_response.headers.get("Link", "")
+                    for part in link.split(","):
+                        if 'rel="next"' in part:
+                            next_url = part.split(";")[0].strip().strip("<>")
+                            break
+                    while next_url:
+                        response = requests.get(next_url, headers=headers, timeout=10)
+                        if response.status_code != 200:
+                            break
+                        pr_count += len(response.json())
+                        next_url = None
+                        link = response.headers.get("Link", "")
+                        for part in link.split(","):
+                            if 'rel="next"' in part:
+                                next_url = part.split(";")[0].strip().strip("<>")
+                                break
+
                     self.clear_labels("success")
                     self.set_center_label(
-                        "PRs", color=[100, 255, 100], outline_width=2, font_size=20, font_family="cantarell"
+                        f"{pr_count}", color=[200, 200, 200], outline_width=3, font_size=32, font_family="cantarell"
                     )
                     self.set_bottom_label(
-                        f"{pr_count}", color=[100, 255, 100], outline_width=4, font_size=20, font_family="cantarell"
+                        "PRs", color=[255, 255, 255], outline_width=2, font_size=15, font_family="cantarell"
                     )
                     self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
                     if pr_count > 0:
                         shas = [
                             pr["head"]["sha"]
-                            for pr in pulls
+                            for pr in first_page
                             if isinstance(pr.get("head"), dict) and "sha" in pr["head"]
                         ]
-                        self.fetch_and_set_commit_status_icons(owner, repo, shas, github_token)
+                        self.fetch_and_set_commit_status_icons(owner, repo, shas, github_token, pr_count)
                 else:
                     self.clear_labels("error")
                     if status == 404:
@@ -246,7 +270,7 @@ class PullRequestsActions(ActionBase):
             self.set_top_label("\nInternal\nError", **kwargs)
             self.set_media(media_path=default_media, size=0.9)
 
-    def fetch_and_set_commit_status_icons(self, owner, repo, shas, github_token):
+    def fetch_and_set_commit_status_icons(self, owner, repo, shas, github_token, pr_count):
         headers = {
             "Authorization": f"token {github_token}",
             "Accept": "application/vnd.github+json"
@@ -282,18 +306,25 @@ class PullRequestsActions(ActionBase):
                 log.error(f"Exception while fetching check-runs for {sha}: {e}")
                 continue
 
-        # Decide icon color based on priority: failure > cancelled/in-progress > success
+        # Decide icon and count label color based on priority: failure > cancelled/in-progress > success
         if "failure" in states:
-            icon_color = "#A00000"  # red
+            icon_color = "#A00000"
+            count_color = [200, 60, 60]
         elif "cancelled" in states or "in_progress" in states:
-            icon_color = "#B7B700"  # yellow
+            icon_color = "#B7B700"
+            count_color = [210, 185, 0]
         elif "success" in states:
-            icon_color = "#236B23"  # green
+            icon_color = "#236B23"
+            count_color = [80, 200, 80]
         else:
-            icon_color = "#595959"  # Gray
+            icon_color = "#595959"
+            count_color = [200, 200, 200]
 
         icon_path = os.path.join(self.plugin_base.PATH, "assets", f"{icon_color}.png")
         self.set_media(media_path=icon_path, size=0.9)
+        self.set_center_label(
+            f"{pr_count}", color=count_color, outline_width=3, font_size=32, font_family="cantarell"
+        )
 
     # Legacy way of checking
     # def fetch_and_set_commit_status_icons(self, owner, repo, shas):
