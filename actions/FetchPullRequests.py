@@ -5,6 +5,7 @@ from src.backend.PluginManager.ActionHolder import ActionHolder  # noqa: F401
 
 # Import python modules
 import os
+import threading
 from loguru import logger as log
 import requests
 
@@ -24,10 +25,11 @@ class PullRequestsActions(ActionBase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._refresh_timer_id = None  # For periodic refresh
+        self._refresh_timer_id = None
         self._token_change_timeout_id = None
         self._repo_url_change_timeout_id = None
         self._last_settings = None
+        self._fetch_lock = threading.Lock()
 
     def on_ready(self) -> None:
         settings = self.get_settings()
@@ -168,7 +170,18 @@ class PullRequestsActions(ActionBase):
             self.set_background_color(color=[255, 255, 255, 255], update=True)
 
     def fetch_and_display_pull_request_count(self):
-        # Common red label parameters
+        t = threading.Thread(target=self._fetch_worker, daemon=True)
+        t.start()
+
+    def _fetch_worker(self):
+        if not self._fetch_lock.acquire(blocking=False):
+            return
+        try:
+            self._do_fetch_and_display()
+        finally:
+            self._fetch_lock.release()
+
+    def _do_fetch_and_display(self):
         red = [255, 100, 100]
         kwargs = {"color": red, "outline_width": 1, "font_size": 17, "font_family": "cantarell"}
         default_media = os.path.join(self.plugin_base.PATH, "assets", "info.png")
@@ -184,7 +197,6 @@ class PullRequestsActions(ActionBase):
                 self.clear_labels("error")
                 self.set_top_label("\nConfigure\nGithub\nPlugin", **kwargs)
                 self.set_media(media_path=default_media, size=0.9)
-                # self.set_bottom_label("Missing Info", color=[255, 100, 100], outline_width=1, font_family="cantarell")
                 return
 
             url = f"https://api.github.com/repos/{owner}/{repo}/pulls"
@@ -207,24 +219,22 @@ class PullRequestsActions(ActionBase):
                     self.set_bottom_label(
                         f"{pr_count}", color=[100, 255, 100], outline_width=4, font_size=20, font_family="cantarell"
                     )
-                    # Set default gray Github icon
                     self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
-                    # Extract SHAs and check commit statuses only if there are PRs
                     if pr_count > 0:
-                        shas = [pr["head"]["sha"] for pr in pulls if isinstance(pr.get("head"), dict) and "sha" in pr["head"]]
-                        self.fetch_and_set_commit_status_icons(owner, repo, shas)
+                        shas = [
+                            pr["head"]["sha"]
+                            for pr in pulls
+                            if isinstance(pr.get("head"), dict) and "sha" in pr["head"]
+                        ]
+                        self.fetch_and_set_commit_status_icons(owner, repo, shas, github_token)
                 else:
                     self.clear_labels("error")
-
                     if status == 404:
                         self.set_top_label("\nInvalid\nRepo URL", **kwargs)
-
                     elif status == 401:
                         self.set_top_label("\nInvalid\nToken", **kwargs)
-
                     else:
                         self.set_top_label("\nConfigure\nGithub\nPlugin", **kwargs)
-
                     self.set_media(media_path=default_media, size=0.9)
 
             except Exception:
@@ -236,9 +246,9 @@ class PullRequestsActions(ActionBase):
             self.set_top_label("\nInternal\nError", **kwargs)
             self.set_media(media_path=default_media, size=0.9)
 
-    def fetch_and_set_commit_status_icons(self, owner, repo, shas):
+    def fetch_and_set_commit_status_icons(self, owner, repo, shas, github_token):
         headers = {
-            "Authorization": f"token {self.plugin_base.get_settings().get('github_token', '')}",
+            "Authorization": f"token {github_token}",
             "Accept": "application/vnd.github+json"
         }
 
