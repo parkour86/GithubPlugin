@@ -175,7 +175,6 @@ class PullRequestsActions(ActionBase):
 
             if not owner or not repo or not github_token:
                 self.clear_labels("error")
-                self.set_background_color(color=[255, 255, 255, 255], update=True)
                 self.set_top_label("\nConfigure\nGithub\nPlugin", **kwargs)
                 self.set_media(media_path=default_media, size=0.9)
                 # self.set_bottom_label("Missing Info", color=[255, 100, 100], outline_width=1, font_family="cantarell")
@@ -220,18 +219,15 @@ class PullRequestsActions(ActionBase):
                         self.set_top_label("\nConfigure\nGithub\nPlugin", **kwargs)
 
                     self.set_media(media_path=default_media, size=0.9)
-                    self.set_background_color(color=[255, 255, 255, 255], update=True)
 
             except Exception:
                 self.clear_labels("error")
                 self.set_top_label("\nRequest\nFailed", **kwargs)
                 self.set_media(media_path=default_media, size=0.9)
-                self.set_background_color(color=[255, 255, 255, 255], update=True)
         except Exception:
             self.clear_labels("error")
             self.set_top_label("\nInternal\nError", **kwargs)
             self.set_media(media_path=default_media, size=0.9)
-            self.set_background_color(color=[255, 255, 255, 255], update=True)
 
     def fetch_and_set_commit_status_icons(self, owner, repo, shas):
         headers = {
