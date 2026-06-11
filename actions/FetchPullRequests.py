@@ -234,7 +234,6 @@ class PullRequestsActions(ActionBase):
             self.set_background_color(color=[255, 255, 255, 255], update=True)
 
     def fetch_and_set_commit_status_icons(self, owner, repo, shas):
-        import requests
         headers = {
             "Authorization": f"token {self.plugin_base.get_settings().get('github_token', '')}",
             "Accept": "application/vnd.github.v3+json"
