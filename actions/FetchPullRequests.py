@@ -247,7 +247,7 @@ class PullRequestsActions(ActionBase):
                     conclusions = [
                         run.get("conclusion")
                         for run in data.get("check_runs", [])
-                        if run.get("status") == "completed"
+                        if run.get("status") == "completed" and run.get("conclusion")
                     ]
 
                     log.info(f"SHA: {sha}, Check run conclusions: {conclusions}")
