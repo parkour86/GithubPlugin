@@ -346,15 +346,13 @@ class ContributionsActions(ActionCore):
                 else:
                     self.set_top_label(None)
 
-                # ✅ Update the bottom label too
                 show_bottom_label = settings.get("show_bottom_label", True)
                 if show_bottom_label:
-                    # Show only the month range (without count) in the bottom label
                     self.set_bottom_label(
                         selected_label.split(" (")[0],
                         color=[100, 255, 100],
                         outline_width=2,
-                        font_size=16,
+                        font_size=14,
                         font_family="cantarell"
                     )
                 else:
