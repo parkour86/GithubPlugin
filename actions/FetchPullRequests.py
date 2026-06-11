@@ -33,7 +33,8 @@ class PullRequestsActions(ActionBase):
         settings = self.get_settings()
         github_token = self.plugin_base.get_settings().get("github_token", "")
         repo_url = settings.get("repo_url", "")
-        if github_token and repo_url and repo_url.startswith("https://github.com/"):
+        owner, repo = self.parse_owner_repo(repo_url)
+        if github_token and owner and repo:
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
             self.fetch_and_display_pull_request_count()
         else:
