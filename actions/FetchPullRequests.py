@@ -184,7 +184,7 @@ class PullRequestsActions(ActionBase):
             url = f"https://api.github.com/repos/{owner}/{repo}/pulls"
             headers = {
                 "Authorization": f"token {github_token}",
-                "Accept": "application/vnd.github.v3+json"
+                "Accept": "application/vnd.github+json"
             }
 
             try:
@@ -236,7 +236,7 @@ class PullRequestsActions(ActionBase):
     def fetch_and_set_commit_status_icons(self, owner, repo, shas):
         headers = {
             "Authorization": f"token {self.plugin_base.get_settings().get('github_token', '')}",
-            "Accept": "application/vnd.github.v3+json"
+            "Accept": "application/vnd.github+json"
         }
 
         states = []
@@ -288,7 +288,7 @@ class PullRequestsActions(ActionBase):
     #         url = f"https://api.github.com/repos/{owner}/{repo}/commits/{sha}/status"
     #         headers = {
     #             "Authorization": f"token {self.get_settings().get('github_token', '')}",
-    #             "Accept": "application/vnd.github.v3+json"
+    #             "Accept": "application/vnd.github+json"
     #         }
     #         try:
     #             response = requests.get(url, headers=headers, timeout=10)
