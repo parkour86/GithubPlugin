@@ -170,7 +170,10 @@ class ContributionsActions(ActionCore):
         if not month_labels or len(month_labels) == 0:
             # fallback to all possible periods if not yet populated
             bimonthly_ranges = self.get_bimonthly_ranges(datetime.now())
-            month_labels = [f"{start.strftime('%b')}-{end.strftime('%b')}" for start, end in bimonthly_ranges]
+            month_labels = [
+                f"{start.strftime('%b').upper()}-{end.strftime('%b').upper()} '{end.strftime('%y')}"
+                for start, end in bimonthly_ranges
+            ]
         selected_month = settings.get("selected_month", "")
         self.display_month_row = ComboRow(
             action_core=self,
@@ -622,7 +625,10 @@ class ContributionsActions(ActionCore):
                                     cell_map[(date_obj.isocalendar()[1], date_obj.weekday())] = (date_str, c)
                                     count += c
                         bimonthly_counts.append(count)
-                        label = f"{start.strftime('%b').upper()}-{end.strftime('%b').upper()} ({count})"
+                        label = (
+                            f"{start.strftime('%b').upper()}-{end.strftime('%b').upper()} "
+                            f"'{end.strftime('%y')} ({count})"
+                        )
                         bimonthly_labels.append(label)
                         if debug:
                             log.info(f"[DEBUG] Built label: {label} with count: {count} for idx: {idx}")
@@ -741,11 +747,13 @@ class ContributionsActions(ActionCore):
                     if selected_month_key:  # Only try rollover if we have a previous selection
                         try:
                             start, end = selected_month_key.split('-')
+                            # Strip year suffix (e.g. "JUN '26" -> "JUN")
+                            end_month = end.split("'")[0].strip().upper()
                             months = [
                                 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
                                 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
                             ]
-                            end_idx = months.index(end.upper())
+                            end_idx = months.index(end_month)
                             next_start_idx = (end_idx + 1) % 12
                             next_end_idx = (end_idx + 2) % 12
                             next_period = f"{months[next_start_idx]}-{months[next_end_idx]}"
@@ -756,7 +764,7 @@ class ContributionsActions(ActionCore):
                                     log.info(f"[MY DEBUG] Checking label: {lbl}")
                                 if lbl.startswith(next_period):
                                     selected_label = lbl
-                                    settings["selected_month"] = next_period
+                                    settings["selected_month"] = label_month_part(lbl)
                                     self.set_settings(settings)
                                     if debug:
                                         log.info(
@@ -810,7 +818,7 @@ class ContributionsActions(ActionCore):
                     selected_label.split(" (")[0],
                     color=[100, 255, 100],
                     outline_width=2,
-                    font_size=16,
+                    font_size=14,
                     font_family="cantarell"
                 )
             else:
