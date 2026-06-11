@@ -357,7 +357,12 @@ class PullRequestsActions(ActionBase):
     def __del__(self):
         try:
             from gi.repository import GLib
-            if self._refresh_timer_id is not None:
-                GLib.source_remove(self._refresh_timer_id)
+            for timer_id in (
+                self._refresh_timer_id,
+                self._token_change_timeout_id,
+                self._repo_url_change_timeout_id,
+            ):
+                if timer_id is not None:
+                    GLib.idle_add(GLib.source_remove, timer_id)
         except Exception:
             pass
