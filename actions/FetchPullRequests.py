@@ -101,6 +101,7 @@ class PullRequestsActions(ActionBase):
             plugin_settings = self.plugin_base.get_settings()
             plugin_settings["github_token"] = entry.get_text().strip()
             self.plugin_base.set_settings(plugin_settings)
+            self._last_settings = plugin_settings.copy()
             self.fetch_and_display_pull_request_count()
             self._token_change_timeout_id = None
             return False  # Only run once
@@ -122,6 +123,7 @@ class PullRequestsActions(ActionBase):
             settings = self.get_settings()
             settings["repo_url"] = entry.get_text().strip()
             self.set_settings(settings)
+            self._last_settings = self.plugin_base.get_settings().copy()
             self.fetch_and_display_pull_request_count()
             self._repo_url_change_timeout_id = None
             return False  # Only run once
