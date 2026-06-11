@@ -1,31 +1,28 @@
 # Import StreamController modules
-from src.backend.PluginManager.ActionBase import ActionBase
-from src.backend.PluginManager.PluginBase import PluginBase
-from src.backend.PluginManager.ActionHolder import ActionHolder
+from src.backend.PluginManager.ActionBase import ActionBase  # noqa: F401
+from src.backend.PluginManager.PluginBase import PluginBase  # noqa: F401
+from src.backend.PluginManager.ActionHolder import ActionHolder  # noqa: F401
 from src.backend.PluginManager.ActionCore import ActionCore
 
 # Import python modules
 import os
+import time
+import threading
+from datetime import datetime, timedelta
 from loguru import logger as log
 import requests
-from datetime import datetime, timedelta
 from PIL import Image, ImageDraw
 from dateutil.relativedelta import relativedelta
 
-# Import gtk modules - used for the config rows (optional, for future UI)
-import gi
+# gi.require_version must be called before any gi.repository imports
+import gi  # noqa: E402
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw
-
-# Import ComboRow for dropdowns
-from GtkHelper.GenerativeUI.ComboRow import ComboRow
-
-import time
-import threading
-import json
+from gi.repository import Adw  # noqa: E402
+from GtkHelper.GenerativeUI.ComboRow import ComboRow  # noqa: E402
 
 debug = True
+
 
 class ContributionsActions(ActionCore):
     """
@@ -75,12 +72,13 @@ class ContributionsActions(ActionCore):
     _contributions_cache = {}
     _cache_timestamp = {}   # (github_user, github_token) -> float
     _cache_params = {}      # (github_user, github_token) -> (last_date_str, refresh_rate)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._token_change_timeout_id = None
         self._user_change_timeout_id = None
         self._refresh_timer_id = None  # For periodic refresh
-        self._debounce_timers = {} # For periodic write of github_user, github_token, refresh_rate
+        self._debounce_timers = {}  # For periodic write of github_user, github_token, refresh_rate
         self._last_settings = None
         self._fetch_lock = threading.Lock()
 
@@ -98,7 +96,10 @@ class ContributionsActions(ActionCore):
             refresh_rate = 0
 
         if debug:
-            log.info(f"[DEBUG] on_ready settings: github_token={github_token[:13]}..., github_user={github_user}, refresh_rate={refresh_rate}")
+            log.info(
+                f"[DEBUG] on_ready settings: github_token={github_token[:13]}..., "
+                f"github_user={github_user}, refresh_rate={refresh_rate}"
+            )
 
         if github_token and github_user:
             self.fetch_and_display_contributions()
@@ -280,7 +281,6 @@ class ContributionsActions(ActionCore):
             log.info(f"[DEBUG] on_refresh_rate_changed: refresh_rate={new_refresh_rate}")
         self.start_refresh_timer()
 
-
     def clear_labels(self, status):
         self.set_top_label(None)
         self.set_center_label(None)
@@ -313,7 +313,11 @@ class ContributionsActions(ActionCore):
 
         if hasattr(self, "_quarter_labels") and hasattr(self, "_quarter_images") and hasattr(self, "_quarter_counts"):
             filtered = [
-                (label, img, count) for label, img, count in zip(self._quarter_labels, self._quarter_images, self._quarter_counts) if img is not None
+                (label, img, count)
+                for label, img, count in zip(
+                    self._quarter_labels, self._quarter_images, self._quarter_counts
+                )
+                if img is not None
             ]
             filtered_labels = [label for label, img, count in filtered]
             filtered_images = [img for label, img, count in filtered]
@@ -385,7 +389,10 @@ class ContributionsActions(ActionCore):
         cell_size = 12
         padding = 0
         # Calculate the first Sunday on/before period_start and last Saturday on/after period_end
-        first_sunday = period_start - timedelta(days=period_start.weekday() + 1) if period_start.weekday() != 6 else period_start
+        if period_start.weekday() != 6:
+            first_sunday = period_start - timedelta(days=period_start.weekday() + 1)
+        else:
+            first_sunday = period_start
         last_saturday = period_end + timedelta(days=(5 - period_end.weekday()) % 7)
         # Build all week start dates
         weeks = []
@@ -483,8 +490,11 @@ class ContributionsActions(ActionCore):
                 cached_last_date_str, _ = cache_params
                 # If refresh_rate is 0, always use cache if available (never refresh from API)
                 # If refresh_rate > 0, use cache only if not expired
-                if ((refresh_rate == 0 and cache_timestamp is not None) or
-                    (refresh_rate > 0 and cache_timestamp is not None and (now - cache_timestamp) < refresh_rate * 3600)):
+                cache_not_expired = (
+                    cache_timestamp is not None and
+                    (refresh_rate == 0 or (now - cache_timestamp) < refresh_rate * 3600)
+                )
+                if cache_not_expired:
                     cache_key = (github_user, github_token, cached_last_date_str)
                     if cache_key in ContributionsActions._contributions_cache:
                         cache_valid = True
@@ -543,7 +553,7 @@ class ContributionsActions(ActionCore):
 
                 try:
                     if debug:
-                        log.info(f"[API] Making GitHub contributions API call for button with refresh_rate: {refresh_rate}")
+                        log.info(f"[API] Making GitHub contributions API call, refresh_rate={refresh_rate}")
                     response = requests.post(
                         "https://api.github.com/graphql",
                         json={"query": query, "variables": {"login": github_user}},
@@ -679,7 +689,10 @@ class ContributionsActions(ActionCore):
             def find_matching_label(key, labels):
                 for lbl in labels:
                     if debug:
-                        log.info(f"[MY DEBUG] lbl: *{lbl}*, label_month_part: *{label_month_part(lbl)}*, selected_month_key: *{selected_month_key}*")
+                        log.info(
+                            f"[MY DEBUG] lbl: *{lbl}*, label_month_part: *{label_month_part(lbl)}*, "
+                            f"selected_month_key: *{selected_month_key}*"
+                        )
                     if label_month_part(lbl).upper() == key.upper():
                         return lbl
                 return None
@@ -712,19 +725,22 @@ class ContributionsActions(ActionCore):
                     selected_label = first_with_data[0] if first_with_data else bimonthly_labels[0]
                     self.display_month_row.set_value(selected_label)
             else:
-                # If the selected_month is saved in the settings then loop over the Month Period dropdown options and set the selected_label
+                # If a month is saved in settings, find it in the freshly fetched labels
                 if selected_month_key:
                     selected_label = find_matching_label(selected_month_key, bimonthly_labels)
 
                 if not selected_label:
                     if debug:
-                        log.info(f"[MY DEBUG] No match found")
+                        log.info("[MY DEBUG] No match found")
                     rollover_found = False
                     # Try to detect rollover: e.g., if JUL-AUG is gone, look for AUG-SEP
                     if selected_month_key:  # Only try rollover if we have a previous selection
                         try:
                             start, end = selected_month_key.split('-')
-                            months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+                            months = [
+                                'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+                                'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+                            ]
                             end_idx = months.index(end.upper())
                             next_start_idx = (end_idx + 1) % 12
                             next_end_idx = (end_idx + 2) % 12
@@ -739,7 +755,10 @@ class ContributionsActions(ActionCore):
                                     settings["selected_month"] = next_period
                                     self.set_settings(settings)
                                     if debug:
-                                        log.info(f"[ROLLOVER] Detected rollover. Updated selected_month to {next_period}")
+                                        log.info(
+                                            f"[ROLLOVER] Detected rollover, "
+                                            f"updated selected_month to {next_period}"
+                                        )
                                     rollover_found = True
                                     break
                         except Exception as e:
@@ -758,7 +777,10 @@ class ContributionsActions(ActionCore):
             img_path = bimonthly_images[idx]
             count = bimonthly_counts[idx]
             if debug:
-                log.info(f"[DEBUG] Using idx: {idx}, img_path: {img_path}, count: {count} for selected_label: {selected_label}")
+                log.info(
+                    f"[DEBUG] Using idx={idx}, count={count}, "
+                    f"selected_label={selected_label}, img_path={img_path}"
+                )
 
             # Top label (count)
             if self.get_settings().get("show_top_label", True):
@@ -809,7 +831,11 @@ class ContributionsActions(ActionCore):
             self.set_media(media_path=default_media, size=0.9)
             self.set_background_color(color=[255, 255, 255, 255], update=True)
             log.error(f"[DEBUG] API Internal Error:{e}", exc_info=True)
-            log.error(f"[DEBUG] github_token={github_token[:13]}..., github_user={github_user}, refresh_rate={refresh_rate}, settings={settings}, cache_params={ContributionsActions._cache_params.get((github_user, github_token))}")
+            log.error(
+                f"[DEBUG] github_token={github_token[:13]}..., github_user={github_user}, "
+                f"refresh_rate={refresh_rate}, settings={settings}, "
+                f"cache_params={ContributionsActions._cache_params.get((github_user, github_token))}"
+            )
             log.error(traceback.format_exc())
 
     def start_refresh_timer(self):
@@ -846,10 +872,7 @@ class ContributionsActions(ActionCore):
             return True  # Continue timer
 
         try:
-            # Refresh rate interval in hours
             self._refresh_timer_id = GLib.timeout_add_seconds(refresh_rate * 3600, _timer_callback)
-            # Refresh rate interval in minutes
-            #self._refresh_timer_id = GLib.timeout_add_seconds(refresh_rate * 60, _timer_callback)
 
         except Exception:
             self._refresh_timer_id = None
