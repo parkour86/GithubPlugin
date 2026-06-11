@@ -43,9 +43,11 @@ This plugin provides two main actions for integrating GitHub data into your [Str
 
 ### Features
 
-- Fetches and displays the number of open pull requests for a specified GitHub repository.
-- Shows a colored icon indicating the status of the latest pull request checks (success, failure, cancelled, timed out, etc.).
-- Provides quick access to the repository's pull requests page via keyboard shortcut.
+- Fetches and displays the total number of open pull requests for a specified GitHub repository (supports repos with 100+ PRs via pagination).
+- Shows a colored status icon based on CI check-run results from the 25 most recently updated PRs.
+- The PR count updates its color to match the CI status once check-runs are resolved.
+- Shows a "Loading..." indicator while data is being fetched in the background.
+- Provides quick access to the repository's pull requests page by pressing the key.
 - Periodically refreshes data based on a configurable interval.
 
 ### Configuration
@@ -57,13 +59,13 @@ This plugin provides two main actions for integrating GitHub data into your [Str
 ### How It Works
 
 1. **Initialization**: On startup, the action checks for a valid token and repository URL. If missing, it prompts for configuration.
-2. **Fetching PRs**: Uses the GitHub API to retrieve open pull requests and displays the count.
-3. **Status Icon**: For each PR, fetches the latest commit's check run status and sets the icon color accordingly:
-   - Red: Failure
-   - Yellow: Cancelled/Timed Out
-   - Green: Success
-   - Gray: No status
-4. **UI Integration**: Provides configuration rows for token, repo URL, and refresh rate. Clicking or pressing a key can open the PRs page in a browser.
+2. **Fetching PRs**: Uses the GitHub API to paginate through all open pull requests for an accurate total count, then displays it as a large centered number.
+3. **Status Icon**: Fetches check-run results for the 25 most recently updated PRs and sets the background icon and count color accordingly:
+   - Red: One or more check-runs failed
+   - Yellow: Runs are cancelled or still in progress
+   - Green: All check-runs passed
+   - Gray: No check-run data found
+4. **UI Integration**: Provides configuration rows for token, repo URL, and refresh rate. Pressing the key opens the PRs page in a browser.
 5. **Auto-Refresh**: Uses a timer to periodically update the display based on the configured refresh rate.
 
 ---
