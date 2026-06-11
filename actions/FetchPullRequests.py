@@ -54,11 +54,6 @@ class PullRequestsActions(ActionBase):
         else:
             log.warning("PullRequests: Cannot open PRs page, owner or repo missing.")
 
-    def on_key_up(self) -> None:
-
-        log.info("PullRequests: Key up event triggered")
-        # Placeholder for logic to clear or update UI
-
     def get_config_rows(self):
         settings = self.get_settings()
         github_token = self.plugin_base.get_settings().get("github_token", "")
