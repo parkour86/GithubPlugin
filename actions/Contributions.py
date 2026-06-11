@@ -427,8 +427,12 @@ class ContributionsActions(ActionCore):
                 draw.rectangle(box, fill=color)
                 draw.rectangle(box, outline="#777777", width=1)
 
-        img_path = os.path.join(plugin_path, f"contributions_img_{github_user}_{quarter_idx + 1}.png")
-        img.save(img_path)
+        cache_dir = os.path.join(plugin_path, "contributions_cache")
+        os.makedirs(cache_dir, exist_ok=True)
+        img_path = os.path.join(cache_dir, f"contributions_img_{github_user}_{quarter_idx + 1}.png")
+        tmp_path = img_path + ".tmp"
+        img.save(tmp_path)
+        os.replace(tmp_path, img_path)
         return img_path
 
     def fetch_and_display_contributions(self):
@@ -466,6 +470,26 @@ class ContributionsActions(ActionCore):
             github_user = plugin_settings.get("github_user", "")
             if debug:
                 log.info(f"[DEBUG] Fetching contributions for {github_user} with token={bool(github_token)}")
+
+            # Ensure cache folder exists
+            plugin_path = self.plugin_base.PATH
+            cache_dir = os.path.join(plugin_path, "contributions_cache")
+            os.makedirs(cache_dir, exist_ok=True)
+
+            # Clean up orphaned .tmp files and stale images from old usernames
+            for fname in os.listdir(cache_dir):
+                fpath = os.path.join(cache_dir, fname)
+                if fname.endswith(".tmp"):
+                    try:
+                        os.remove(fpath)
+                    except Exception:
+                        pass
+                elif fname.endswith(".png"):
+                    if github_user and f"contributions_img_{github_user}_" not in fname:
+                        try:
+                            os.remove(fpath)
+                        except Exception:
+                            pass
 
             if not github_token or not github_user:
                 log.info("[DEBUG] No github_token or github_user, aborting fetch_and_display_contributions")
