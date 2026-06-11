@@ -1,31 +1,28 @@
 # Import StreamController modules
-from src.backend.PluginManager.ActionBase import ActionBase
-from src.backend.PluginManager.PluginBase import PluginBase
-from src.backend.PluginManager.ActionHolder import ActionHolder
+from src.backend.PluginManager.ActionBase import ActionBase  # noqa: F401
+from src.backend.PluginManager.PluginBase import PluginBase  # noqa: F401
+from src.backend.PluginManager.ActionHolder import ActionHolder  # noqa: F401
 from src.backend.PluginManager.ActionCore import ActionCore
 
 # Import python modules
 import os
+import time
+import threading
+from datetime import datetime, timedelta
 from loguru import logger as log
 import requests
-from datetime import datetime, timedelta
 from PIL import Image, ImageDraw
 from dateutil.relativedelta import relativedelta
 
-# Import gtk modules - used for the config rows (optional, for future UI)
-import gi
+# gi.require_version must be called before any gi.repository imports
+import gi  # noqa: E402
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw
-
-# Import ComboRow for dropdowns
-from GtkHelper.GenerativeUI.ComboRow import ComboRow
-
-import time
-import threading
-import json
+from gi.repository import Adw  # noqa: E402
+from GtkHelper.GenerativeUI.ComboRow import ComboRow  # noqa: E402
 
 debug = True
+
 
 class ContributionsActions(ActionCore):
     """
@@ -75,16 +72,17 @@ class ContributionsActions(ActionCore):
     _contributions_cache = {}
     _cache_timestamp = {}   # (github_user, github_token) -> float
     _cache_params = {}      # (github_user, github_token) -> (last_date_str, refresh_rate)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._token_change_timeout_id = None
         self._user_change_timeout_id = None
         self._refresh_timer_id = None  # For periodic refresh
-        self._debounce_timers = {} # For periodic write of github_user, github_token, refresh_rate
+        self._debounce_timers = {}  # For periodic write of github_user, github_token, refresh_rate
         self._last_settings = None
+        self._fetch_lock = threading.Lock()
 
     def on_ready(self) -> None:
-        time.sleep(0.2)
         settings = self.get_settings()
         selected_month = settings.get("selected_month", "")
         if debug:
@@ -92,10 +90,16 @@ class ContributionsActions(ActionCore):
         plugin_settings = self.plugin_base.get_settings()
         github_token = plugin_settings.get("github_token", "")
         github_user = plugin_settings.get("github_user", "")
-        refresh_rate = int(plugin_settings.get("refresh_rate", "0"))
+        try:
+            refresh_rate = int(plugin_settings.get("refresh_rate", "0"))
+        except (ValueError, TypeError):
+            refresh_rate = 0
 
         if debug:
-            log.info(f"[DEBUG] on_ready settings: github_token={github_token[:13]}..., github_user={github_user}, refresh_rate={refresh_rate}")
+            log.info(
+                f"[DEBUG] on_ready settings: github_token={github_token[:13]}..., "
+                f"github_user={github_user}, refresh_rate={refresh_rate}"
+            )
 
         if github_token and github_user:
             self.fetch_and_display_contributions()
@@ -166,7 +170,10 @@ class ContributionsActions(ActionCore):
         if not month_labels or len(month_labels) == 0:
             # fallback to all possible periods if not yet populated
             bimonthly_ranges = self.get_bimonthly_ranges(datetime.now())
-            month_labels = [f"{start.strftime('%b')}-{end.strftime('%b')}" for start, end in bimonthly_ranges]
+            month_labels = [
+                f"{start.strftime('%b').upper()}-{end.strftime('%b').upper()} '{end.strftime('%y')}"
+                for start, end in bimonthly_ranges
+            ]
         selected_month = settings.get("selected_month", "")
         self.display_month_row = ComboRow(
             action_core=self,
@@ -264,7 +271,10 @@ class ContributionsActions(ActionCore):
         try:
             new_refresh_rate = int(value) if value is not None else int(plugin_settings.get("refresh_rate", "0"))
         except (ValueError, TypeError):
-            new_refresh_rate = int(plugin_settings.get("refresh_rate", "0"))
+            try:
+                new_refresh_rate = int(plugin_settings.get("refresh_rate", "0"))
+            except (ValueError, TypeError):
+                new_refresh_rate = 0
 
         # Always update plugin's settings immediately
         plugin_settings["refresh_rate"] = str(new_refresh_rate)
@@ -273,7 +283,6 @@ class ContributionsActions(ActionCore):
         if debug:
             log.info(f"[DEBUG] on_refresh_rate_changed: refresh_rate={new_refresh_rate}")
         self.start_refresh_timer()
-
 
     def clear_labels(self, status):
         self.set_top_label(None)
@@ -307,7 +316,11 @@ class ContributionsActions(ActionCore):
 
         if hasattr(self, "_quarter_labels") and hasattr(self, "_quarter_images") and hasattr(self, "_quarter_counts"):
             filtered = [
-                (label, img, count) for label, img, count in zip(self._quarter_labels, self._quarter_images, self._quarter_counts) if img is not None
+                (label, img, count)
+                for label, img, count in zip(
+                    self._quarter_labels, self._quarter_images, self._quarter_counts
+                )
+                if img is not None
             ]
             filtered_labels = [label for label, img, count in filtered]
             filtered_images = [img for label, img, count in filtered]
@@ -318,29 +331,28 @@ class ContributionsActions(ActionCore):
                 img_path = filtered_images[idx]
                 count = filtered_counts[idx]
                 if img_path:
-                    self.set_media(media_path=img_path, size=0.68, valign=-.7)
+                    self.set_media(media_path=img_path, size=0.68, valign=0.3)  # adjust valign to taste
 
-                # ✅ Update the top label (contribution count) for the selected period
+                # Top label: date range
                 show_top_label = settings.get("show_top_label", True)
                 if show_top_label:
                     self.set_top_label(
-                        f"{count}",
+                        selected_label.split(" (")[0],
                         color=[100, 255, 100],
-                        outline_width=4,
-                        font_size=18,
+                        outline_width=2,
+                        font_size=13,
                         font_family="cantarell"
                     )
                 else:
                     self.set_top_label(None)
 
-                # ✅ Update the bottom label too
+                # Bottom label: contribution count
                 show_bottom_label = settings.get("show_bottom_label", True)
                 if show_bottom_label:
-                    # Show only the month range (without count) in the bottom label
                     self.set_bottom_label(
-                        selected_label.split(" (")[0],
+                        f"{count}",
                         color=[100, 255, 100],
-                        outline_width=2,
+                        outline_width=3,
                         font_size=16,
                         font_family="cantarell"
                     )
@@ -379,7 +391,10 @@ class ContributionsActions(ActionCore):
         cell_size = 12
         padding = 0
         # Calculate the first Sunday on/before period_start and last Saturday on/after period_end
-        first_sunday = period_start - timedelta(days=period_start.weekday() + 1) if period_start.weekday() != 6 else period_start
+        if period_start.weekday() != 6:
+            first_sunday = period_start - timedelta(days=period_start.weekday() + 1)
+        else:
+            first_sunday = period_start
         last_saturday = period_end + timedelta(days=(5 - period_end.weekday()) % 7)
         # Build all week start dates
         weeks = []
@@ -390,7 +405,7 @@ class ContributionsActions(ActionCore):
         num_cols = len(weeks)
         height = 7 * cell_size + (7 - 1) * padding
 
-        img = Image.new("RGB", (num_cols * (cell_size + padding), height), "white")
+        img = Image.new("RGB", (num_cols * (cell_size + padding), height), (255, 255, 255))  # type: ignore[arg-type]
         draw = ImageDraw.Draw(img)
 
         # Build a date->count map for fast lookup
@@ -412,29 +427,45 @@ class ContributionsActions(ActionCore):
                 draw.rectangle(box, fill=color)
                 draw.rectangle(box, outline="#777777", width=1)
 
-        img_path = os.path.join(plugin_path, f"contributions_img_{github_user}_{quarter_idx+1}.png")
+        img_path = os.path.join(plugin_path, f"contributions_img_{github_user}_{quarter_idx + 1}.png")
         img.save(img_path)
         return img_path
 
     def fetch_and_display_contributions(self):
+        if not self._fetch_lock.acquire(blocking=False):
+            if debug:
+                log.info("[DEBUG] fetch_and_display_contributions: fetch already in progress, skipping.")
+            return
+        threading.Thread(target=self._fetch_and_display_worker, daemon=True).start()
+
+    def _fetch_and_display_worker(self):
+        try:
+            self._do_fetch_and_display()
+        finally:
+            self._fetch_lock.release()
+
+    def _do_fetch_and_display(self):
         # Common red label parameters
         red = [255, 100, 100]
         kwargs = {"color": red, "outline_width": 1, "font_size": 17, "font_family": "cantarell"}
         default_media = os.path.join(self.plugin_base.PATH, "assets", "info.png")
 
-        # Initialize to avoid possibly unbound variable errors
+        # Initialize to avoid possibly unbound variable errors in the except block
         bimonthly_labels = []
         bimonthly_images = []
         bimonthly_counts = []
+        settings: dict = {}
+        github_token = ""
+        github_user = ""
+        refresh_rate: int = 0
 
         try:
             settings = self.get_settings()
             plugin_settings = self.plugin_base.get_settings()
             github_token = plugin_settings.get("github_token", "")
             github_user = plugin_settings.get("github_user", "")
-            refresh_rate = plugin_settings.get("refresh_rate", "0")
             if debug:
-                log.info(f"[DEBUG] Fetching contributions for {github_user} with token={bool(github_token)}, refresh_rate={refresh_rate}")
+                log.info(f"[DEBUG] Fetching contributions for {github_user} with token={bool(github_token)}")
 
             if not github_token or not github_user:
                 log.info("[DEBUG] No github_token or github_user, aborting fetch_and_display_contributions")
@@ -465,8 +496,11 @@ class ContributionsActions(ActionCore):
                 cached_last_date_str, _ = cache_params
                 # If refresh_rate is 0, always use cache if available (never refresh from API)
                 # If refresh_rate > 0, use cache only if not expired
-                if ((refresh_rate == 0 and cache_timestamp is not None) or
-                    (refresh_rate > 0 and cache_timestamp is not None and (now - cache_timestamp) < refresh_rate * 3600)):
+                cache_not_expired = (
+                    cache_timestamp is not None and
+                    (refresh_rate == 0 or (now - cache_timestamp) < refresh_rate * 3600)
+                )
+                if cache_not_expired:
                     cache_key = (github_user, github_token, cached_last_date_str)
                     if cache_key in ContributionsActions._contributions_cache:
                         cache_valid = True
@@ -479,6 +513,13 @@ class ContributionsActions(ActionCore):
                 bimonthly_labels = cache["labels"]
                 bimonthly_images = cache["images"]
                 bimonthly_counts = cache["counts"]
+                # Invalidate cache if any image file no longer exists on disk
+                if any(img and not os.path.exists(img) for img in bimonthly_images):
+                    if debug:
+                        log.info("[CACHE] One or more cached image paths are missing, invalidating cache.")
+                    ContributionsActions._contributions_cache.pop(cache_key, None)
+                    cache_valid = False
+
                 # Invalidate cache if selected_month_key is missing from bimonthly_labels
                 selected_month_key = self.get_settings().get("selected_month", None)
                 label_month_parts = [lbl.split(" (")[0] for lbl in bimonthly_labels]
@@ -486,9 +527,7 @@ class ContributionsActions(ActionCore):
                     if debug:
                         log.info("[CACHE] selected_month_key missing from bimonthly_labels, invalidating cache.")
                     cache_valid = False
-                elif last_date_str is not None:
-                    last_date = datetime.strptime(last_date_str, "%Y-%m-%d")
-                else:
+                elif last_date_str is None:
                     # Cache is invalid or corrupted, force a fresh fetch
                     if debug:
                         log.warning("[CACHE] last_date_str is None, forcing fresh fetch.")
@@ -520,7 +559,7 @@ class ContributionsActions(ActionCore):
 
                 try:
                     if debug:
-                        log.info(f"[API] Making GitHub contributions API call for button with refresh_rate: {refresh_rate}")
+                        log.info(f"[API] Making GitHub contributions API call, refresh_rate={refresh_rate}")
                     response = requests.post(
                         "https://api.github.com/graphql",
                         json={"query": query, "variables": {"login": github_user}},
@@ -585,7 +624,10 @@ class ContributionsActions(ActionCore):
                                     cell_map[(date_obj.isocalendar()[1], date_obj.weekday())] = (date_str, c)
                                     count += c
                         bimonthly_counts.append(count)
-                        label = f"{start.strftime('%b').upper()}-{end.strftime('%b').upper()} ({count})"
+                        label = (
+                            f"{start.strftime('%b').upper()}-{end.strftime('%b').upper()} "
+                            f"'{end.strftime('%y')} ({count})"
+                        )
                         bimonthly_labels.append(label)
                         if debug:
                             log.info(f"[DEBUG] Built label: {label} with count: {count} for idx: {idx}")
@@ -596,6 +638,14 @@ class ContributionsActions(ActionCore):
                             github_user=github_user
                         )
                         bimonthly_images.append(img_path)
+
+                    # Evict the previous cache entry for this instance before writing the new one.
+                    # last_date_str changes daily, so without eviction old keys accumulate forever.
+                    old_params = ContributionsActions._cache_params.get(instance_key)
+                    if old_params:
+                        old_last_date_str, _ = old_params
+                        old_key = (github_user, github_token, old_last_date_str)
+                        ContributionsActions._contributions_cache.pop(old_key, None)
 
                     # Save to cache
                     cache_key = (github_user, github_token, last_date_str)
@@ -625,7 +675,9 @@ class ContributionsActions(ActionCore):
                 log.info(f"[DEBUG] All bimonthly_counts: {bimonthly_counts}")
 
             first_with_data = next(
-                ((lbl, img, cnt) for lbl, img, cnt in zip(bimonthly_labels, bimonthly_images, bimonthly_counts) if cnt > 0),
+                ((lbl, img, cnt) for lbl, img, cnt in zip(
+                    reversed(bimonthly_labels), reversed(bimonthly_images), reversed(bimonthly_counts)
+                ) if cnt > 0),
                 (None, None, None)
             )
 
@@ -646,8 +698,11 @@ class ContributionsActions(ActionCore):
             def find_matching_label(key, labels):
                 for lbl in labels:
                     if debug:
-                        log.info(f"[MY DEBUG] lbl: *{lbl}*, label_month_part: *{label_month_part(lbl)}*, selected_month_key: *{selected_month_key}*")
-                    if label_month_part(lbl) == key:
+                        log.info(
+                            f"[MY DEBUG] lbl: *{lbl}*, label_month_part: *{label_month_part(lbl)}*, "
+                            f"selected_month_key: *{selected_month_key}*"
+                        )
+                    if label_month_part(lbl).upper() == key.upper():
                         return lbl
                 return None
 
@@ -679,22 +734,27 @@ class ContributionsActions(ActionCore):
                     selected_label = first_with_data[0] if first_with_data else bimonthly_labels[0]
                     self.display_month_row.set_value(selected_label)
             else:
-                # If the selected_month is saved in the settings then loop over the Month Period dropdown options and set the selected_label
+                # If a month is saved in settings, find it in the freshly fetched labels
                 if selected_month_key:
                     selected_label = find_matching_label(selected_month_key, bimonthly_labels)
 
                 if not selected_label:
                     if debug:
-                        log.info(f"[MY DEBUG] No match found")
+                        log.info("[MY DEBUG] No match found")
                     rollover_found = False
                     # Try to detect rollover: e.g., if JUL-AUG is gone, look for AUG-SEP
                     if selected_month_key:  # Only try rollover if we have a previous selection
                         try:
                             start, end = selected_month_key.split('-')
-                            months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-                            end_idx = months.index(end.upper())
-                            next_start_idx = end_idx
-                            next_end_idx = (end_idx + 1) % 12
+                            # Strip year suffix (e.g. "JUN '26" -> "JUN")
+                            end_month = end.split("'")[0].strip().upper()
+                            months = [
+                                'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+                                'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+                            ]
+                            end_idx = months.index(end_month)
+                            next_start_idx = (end_idx + 1) % 12
+                            next_end_idx = (end_idx + 2) % 12
                             next_period = f"{months[next_start_idx]}-{months[next_end_idx]}"
                             if debug:
                                 log.info(f"[MY DEBUG] Next period: {next_period}")
@@ -703,10 +763,13 @@ class ContributionsActions(ActionCore):
                                     log.info(f"[MY DEBUG] Checking label: {lbl}")
                                 if lbl.startswith(next_period):
                                     selected_label = lbl
-                                    settings["selected_month"] = next_period
+                                    settings["selected_month"] = label_month_part(lbl)
                                     self.set_settings(settings)
                                     if debug:
-                                        log.info(f"[ROLLOVER] Detected rollover. Updated selected_month to {next_period}")
+                                        log.info(
+                                            f"[ROLLOVER] Detected rollover, "
+                                            f"updated selected_month to {next_period}"
+                                        )
                                     rollover_found = True
                                     break
                         except Exception as e:
@@ -725,17 +788,20 @@ class ContributionsActions(ActionCore):
             img_path = bimonthly_images[idx]
             count = bimonthly_counts[idx]
             if debug:
-                log.info(f"[DEBUG] Using idx: {idx}, img_path: {img_path}, count: {count} for selected_label: {selected_label}")
+                log.info(
+                    f"[DEBUG] Using idx={idx}, count={count}, "
+                    f"selected_label={selected_label}, img_path={img_path}"
+                )
 
-            # Top label (count)
+            # Top label (date range)
             if self.get_settings().get("show_top_label", True):
                 if debug:
-                    log.info(f"[DEBUG] Setting top label to count: {count}")
+                    log.info(f"[DEBUG] Setting top label to date range: {selected_label.split(' (')[0]}")
                 self.set_top_label(
-                    f"{count}",
+                    selected_label.split(" (")[0],
                     color=[100, 255, 100],
-                    outline_width=4,
-                    font_size=18,
+                    outline_width=2,
+                    font_size=13,
                     font_family="cantarell"
                 )
             else:
@@ -743,14 +809,14 @@ class ContributionsActions(ActionCore):
                     log.info("[DEBUG] Hiding top label")
                 self.set_top_label(None)
 
-            # Bottom label (month range)
+            # Bottom label (contribution count)
             if self.get_settings().get("show_bottom_label", True):
                 if debug:
-                    log.info(f"[DEBUG] Setting bottom label to: {selected_label.split(' (')[0]}")
+                    log.info(f"[DEBUG] Setting bottom label to count: {count}")
                 self.set_bottom_label(
-                    selected_label.split(" (")[0],
+                    f"{count}",
                     color=[100, 255, 100],
-                    outline_width=2,
+                    outline_width=3,
                     font_size=16,
                     font_family="cantarell"
                 )
@@ -763,7 +829,7 @@ class ContributionsActions(ActionCore):
             if img_path:
                 if debug:
                     log.info(f"[DEBUG] Setting media to img_path: {img_path}")
-                self.set_media(media_path=img_path, size=0.68, valign=-.7)
+                self.set_media(media_path=img_path, size=0.68, valign=0.3)  # adjust valign to taste
             else:
                 if debug:
                     log.info(f"[DEBUG] Setting media to default_media: {default_media}")
@@ -776,7 +842,11 @@ class ContributionsActions(ActionCore):
             self.set_media(media_path=default_media, size=0.9)
             self.set_background_color(color=[255, 255, 255, 255], update=True)
             log.error(f"[DEBUG] API Internal Error:{e}", exc_info=True)
-            log.error(f"[DEBUG] github_token={github_token[:13]}..., github_user={github_user}, refresh_rate={refresh_rate}, settings={settings}, cache_params={ContributionsActions._cache_params.get((github_user, github_token))}")
+            log.error(
+                f"[DEBUG] github_token={github_token[:13]}..., github_user={github_user}, "
+                f"refresh_rate={refresh_rate}, settings={settings}, "
+                f"cache_params={ContributionsActions._cache_params.get((github_user, github_token))}"
+            )
             log.error(traceback.format_exc())
 
     def start_refresh_timer(self):
@@ -813,10 +883,7 @@ class ContributionsActions(ActionCore):
             return True  # Continue timer
 
         try:
-            # Refresh rate interval in hours
             self._refresh_timer_id = GLib.timeout_add_seconds(refresh_rate * 3600, _timer_callback)
-            # Refresh rate interval in minutes
-            #self._refresh_timer_id = GLib.timeout_add_seconds(refresh_rate * 60, _timer_callback)
 
         except Exception:
             self._refresh_timer_id = None
@@ -825,6 +892,7 @@ class ContributionsActions(ActionCore):
         try:
             from gi.repository import GLib
             if self._refresh_timer_id is not None:
-                GLib.source_remove(self._refresh_timer_id)
+                timer_id = self._refresh_timer_id
+                GLib.idle_add(GLib.source_remove, timer_id)
         except Exception:
             pass
