@@ -84,9 +84,9 @@ class ContributionsActions(ActionCore):
 
     def on_ready(self) -> None:
         settings = self.get_settings()
-        selected_month = settings.get("selected_month", "")
+        selected_month_slot = settings.get("selected_month_slot", 5)
         if debug:
-            log.info(f"[DEBUG] on_ready: selected_month={selected_month}")
+            log.info(f"[DEBUG] on_ready: selected_month_slot={selected_month_slot}")
         plugin_settings = self.plugin_base.get_settings()
         github_token = plugin_settings.get("github_token", "")
         github_user = plugin_settings.get("github_user", "")
@@ -174,11 +174,14 @@ class ContributionsActions(ActionCore):
                 f"{start.strftime('%b').upper()}-{end.strftime('%b').upper()} '{end.strftime('%y')}"
                 for start, end in bimonthly_ranges
             ]
-        selected_month = settings.get("selected_month", "")
+        slot = settings.get("selected_month_slot", 5)
+        if not isinstance(slot, int) or slot < 0 or slot >= len(month_labels):
+            slot = len(month_labels) - 1
+        default_month = month_labels[slot]
         self.display_month_row = ComboRow(
             action_core=self,
             var_name="display_contribution_month",
-            default_value=selected_month,  # Use the value from settings
+            default_value=default_month,
             items=month_labels,
             title="Display Contribution Period",
             on_change=self.on_display_month_changed,
@@ -308,10 +311,15 @@ class ContributionsActions(ActionCore):
     def on_display_month_changed(self, widget, value, old):
         settings = self.get_settings()
         selected_label = value.get_value() if hasattr(value, "get_value") else value
-        # Save only the month part to settings for refresh restoration
-        month_part = selected_label.split(" (")[0] if selected_label else ""
-        log.info(f"[DEBUG] on_display_month_changed: Saving selected_month = {month_part}")
-        settings["selected_month"] = month_part
+        # Save the slot index so the button always tracks the relative position in the list
+        slot = 5  # default to newest
+        if hasattr(self, "_quarter_labels") and self._quarter_labels and selected_label:
+            label_parts = [lbl.split(" (")[0] for lbl in self._quarter_labels]
+            sel_part = selected_label.split(" (")[0] if selected_label else ""
+            if sel_part in label_parts:
+                slot = label_parts.index(sel_part)
+        log.info(f"[DEBUG] on_display_month_changed: Saving selected_month_slot = {slot}")
+        settings["selected_month_slot"] = slot
         self.set_settings(settings)
 
         if hasattr(self, "_quarter_labels") and hasattr(self, "_quarter_images") and hasattr(self, "_quarter_counts"):
@@ -548,14 +556,7 @@ class ContributionsActions(ActionCore):
                     ContributionsActions._contributions_cache.pop(cache_key, None)
                     cache_valid = False
 
-                # Invalidate cache if selected_month_key is missing from bimonthly_labels
-                selected_month_key = self.get_settings().get("selected_month", None)
-                label_month_parts = [lbl.split(" (")[0] for lbl in bimonthly_labels]
-                if selected_month_key and selected_month_key not in label_month_parts:
-                    if debug:
-                        log.info("[CACHE] selected_month_key missing from bimonthly_labels, invalidating cache.")
-                    cache_valid = False
-                elif last_date_str is None:
+                if last_date_str is None:
                     # Cache is invalid or corrupted, force a fresh fetch
                     if debug:
                         log.warning("[CACHE] last_date_str is None, forcing fresh fetch.")
@@ -720,93 +721,35 @@ class ContributionsActions(ActionCore):
             # Start clean
             self.clear_labels("success")
 
-            def label_month_part(lbl):
-                return lbl.split(" (")[0] if lbl else ""
+            # Resolve slot index: 0=oldest period, 5=newest/current period.
+            # Migration: if old string-based "selected_month" exists but no slot, find its position.
+            current_settings = self.get_settings()
+            slot = current_settings.get("selected_month_slot", None)
+            if slot is None:
+                old_key = current_settings.get("selected_month", "")
+                if old_key:
+                    label_parts = [lbl.split(" (")[0].upper() for lbl in bimonthly_labels]
+                    slot = label_parts.index(old_key.upper()) if old_key.upper() in label_parts else 5
+                else:
+                    slot = 5
+                # Persist the migrated slot so we don't re-migrate on next tick
+                current_settings["selected_month_slot"] = slot
+                self.set_settings(current_settings)
 
-            def find_matching_label(key, labels):
-                for lbl in labels:
-                    if debug:
-                        log.info(
-                            f"[MY DEBUG] lbl: *{lbl}*, label_month_part: *{label_month_part(lbl)}*, "
-                            f"selected_month_key: *{selected_month_key}*"
-                        )
-                    if label_month_part(lbl).upper() == key.upper():
-                        return lbl
-                return None
+            slot = max(0, min(int(slot), len(bimonthly_labels) - 1))
+            selected_label = bimonthly_labels[slot]
 
-            # Pull the selected month from the settings
-            selected_month_key = self.get_settings().get("selected_month", None)
             if debug:
-                log.info(f"[MY DEBUG] selected_month_key: {selected_month_key}")
+                log.info(f"[DEBUG] selected_month_slot={slot}, selected_label={selected_label}")
 
-            selected_label = None
-            # Jump into this loop if the button was just created
             if hasattr(self, "display_month_row") and self.display_month_row is not None:
-                # Populate the display_month_row with the bimonthly_labels
                 self.display_month_row.populate(
                     bimonthly_labels,
                     selected_item=None,
                     update_settings=False,
                     trigger_callback=False
                 )
-
-                if selected_month_key:
-                    selected_label = find_matching_label(selected_month_key, bimonthly_labels)
-
-                if debug:
-                    log.info(f"[App was created] Selected label: {selected_label}")
-
-                if selected_label:
-                    self.display_month_row.set_value(selected_label)
-                else:
-                    selected_label = first_with_data[0] if first_with_data else bimonthly_labels[0]
-                    self.display_month_row.set_value(selected_label)
-            else:
-                # If a month is saved in settings, find it in the freshly fetched labels
-                if selected_month_key:
-                    selected_label = find_matching_label(selected_month_key, bimonthly_labels)
-
-                if not selected_label:
-                    if debug:
-                        log.info("[MY DEBUG] No match found")
-                    rollover_found = False
-                    # Try to detect rollover: e.g., if JUL-AUG is gone, look for AUG-SEP
-                    if selected_month_key:  # Only try rollover if we have a previous selection
-                        try:
-                            start, end = selected_month_key.split('-')
-                            # Strip year suffix (e.g. "JUN '26" -> "JUN")
-                            end_month = end.split("'")[0].strip().upper()
-                            months = [
-                                'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-                                'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
-                            ]
-                            end_idx = months.index(end_month)
-                            next_start_idx = (end_idx + 1) % 12
-                            next_end_idx = (end_idx + 2) % 12
-                            next_period = f"{months[next_start_idx]}-{months[next_end_idx]}"
-                            if debug:
-                                log.info(f"[MY DEBUG] Next period: {next_period}")
-                            for lbl in bimonthly_labels:
-                                if debug:
-                                    log.info(f"[MY DEBUG] Checking label: {lbl}")
-                                if lbl.startswith(next_period):
-                                    selected_label = lbl
-                                    settings["selected_month"] = label_month_part(lbl)
-                                    self.set_settings(settings)
-                                    if debug:
-                                        log.info(
-                                            f"[ROLLOVER] Detected rollover, "
-                                            f"updated selected_month to {next_period}"
-                                        )
-                                    rollover_found = True
-                                    break
-                        except Exception as e:
-                            if debug:
-                                log.warning(f"[ROLLOVER] Failed to parse or find rollover period: {e}")
-                    if not rollover_found or not selected_label:
-                        selected_label = first_with_data[0] if first_with_data else bimonthly_labels[0]
-                        settings["selected_month"] = selected_label.split(" (")[0]
-                        self.set_settings(settings)
+                self.display_month_row.set_value(selected_label)
 
             if debug:
                 log.info(f"[DEBUG] Final selected_label: {selected_label}")
