@@ -1,27 +1,27 @@
 # Import StreamController modules
 from src.backend.PluginManager.ActionBase import ActionBase
-from src.backend.PluginManager.PluginBase import PluginBase
-from src.backend.PluginManager.ActionHolder import ActionHolder
+from src.backend.PluginManager.PluginBase import PluginBase  # noqa: F401
+from src.backend.PluginManager.ActionHolder import ActionHolder  # noqa: F401
 
 # Import python modules
 import os
 from loguru import logger as log
 import requests
 
-# Import gtk modules - used for the config rows (optional, for future UI)
-import gi
+# gi.require_version must be called before any gi.repository imports
+import gi  # noqa: E402
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw
+from gi.repository import Adw  # noqa: E402
+from GtkHelper.GenerativeUI.ComboRow import ComboRow  # noqa: E402
 
-# Import ComboRow for dropdowns
-from GtkHelper.GenerativeUI.ComboRow import ComboRow
 
 class PullRequestsActions(ActionBase):
     """
     Example Action for PluginTemplate: PullRequests
     This action can be extended to fetch and display pull requests from a repository.
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._refresh_timer_id = None  # For periodic refresh
@@ -183,7 +183,7 @@ class PullRequestsActions(ActionBase):
                 self.set_background_color(color=[255, 255, 255, 255], update=True)
                 self.set_top_label("\nConfigure\nGithub\nPlugin", **kwargs)
                 self.set_media(media_path=default_media, size=0.9)
-                #self.set_bottom_label("Missing Info", color=[255, 100, 100], outline_width=1, font_family="cantarell")
+                # self.set_bottom_label("Missing Info", color=[255, 100, 100], outline_width=1, font_family="cantarell")
                 return
 
             url = f"https://api.github.com/repos/{owner}/{repo}/pulls"
@@ -200,8 +200,12 @@ class PullRequestsActions(ActionBase):
                     pulls = response.json()
                     pr_count = len(pulls)
                     self.clear_labels("success")
-                    self.set_center_label("PRs", color=[100, 255, 100], outline_width=2, font_size=20, font_family="cantarell")
-                    self.set_bottom_label(f"{pr_count}", color=[100, 255, 100], outline_width=4, font_size=20, font_family="cantarell")
+                    self.set_center_label(
+                        "PRs", color=[100, 255, 100], outline_width=2, font_size=20, font_family="cantarell"
+                    )
+                    self.set_bottom_label(
+                        f"{pr_count}", color=[100, 255, 100], outline_width=4, font_size=20, font_family="cantarell"
+                    )
                     # Set default gray Github icon
                     self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
                     # Extract SHAs and check commit statuses only if there are PRs
@@ -249,7 +253,11 @@ class PullRequestsActions(ActionBase):
                 response = requests.get(url, headers=headers, timeout=10)
                 if response.status_code == 200:
                     data = response.json()
-                    conclusions = [run.get("conclusion") for run in data.get("check_runs", []) if run.get("status") == "completed"]
+                    conclusions = [
+                        run.get("conclusion")
+                        for run in data.get("check_runs", [])
+                        if run.get("status") == "completed"
+                    ]
 
                     log.info(f"SHA: {sha}, Check run conclusions: {conclusions}")
 
@@ -277,7 +285,6 @@ class PullRequestsActions(ActionBase):
 
         icon_path = os.path.join(self.plugin_base.PATH, "assets", f"{icon_color}.png")
         self.set_media(media_path=icon_path, size=0.9)
-
 
     # Legacy way of checking
     # def fetch_and_set_commit_status_icons(self, owner, repo, shas):
