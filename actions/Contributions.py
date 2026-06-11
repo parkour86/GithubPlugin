@@ -403,7 +403,7 @@ class ContributionsActions(ActionCore):
         num_cols = len(weeks)
         height = 7 * cell_size + (7 - 1) * padding
 
-        img = Image.new("RGB", (num_cols * (cell_size + padding), height), "white")
+        img = Image.new("RGB", (num_cols * (cell_size + padding), height), (255, 255, 255))  # type: ignore[arg-type]
         draw = ImageDraw.Draw(img)
 
         # Build a date->count map for fast lookup
@@ -448,10 +448,14 @@ class ContributionsActions(ActionCore):
         kwargs = {"color": red, "outline_width": 1, "font_size": 17, "font_family": "cantarell"}
         default_media = os.path.join(self.plugin_base.PATH, "assets", "info.png")
 
-        # Initialize to avoid possibly unbound variable errors
+        # Initialize to avoid possibly unbound variable errors in the except block
         bimonthly_labels = []
         bimonthly_images = []
         bimonthly_counts = []
+        settings: dict = {}
+        github_token = ""
+        github_user = ""
+        refresh_rate: int = 0
 
         try:
             settings = self.get_settings()
