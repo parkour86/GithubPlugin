@@ -42,7 +42,7 @@ class PullRequestsActions(ActionBase):
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
             self.set_top_label("\nConfigure\nGithub\nPlugin", color=[255, 100, 100], outline_width=1, font_size=17)
 
-        self._last_settings = self.plugin_base.get_settings().copy()
+        self._last_settings = {**self.plugin_base.get_settings(), **self.get_settings()}
         self.start_refresh_timer()
 
     def on_key_down(self) -> None:
@@ -101,7 +101,7 @@ class PullRequestsActions(ActionBase):
             plugin_settings = self.plugin_base.get_settings()
             plugin_settings["github_token"] = entry.get_text().strip()
             self.plugin_base.set_settings(plugin_settings)
-            self._last_settings = plugin_settings.copy()
+            self._last_settings = {**plugin_settings, **self.get_settings()}
             self.fetch_and_display_pull_request_count()
             self._token_change_timeout_id = None
             return False  # Only run once
@@ -123,7 +123,7 @@ class PullRequestsActions(ActionBase):
             settings = self.get_settings()
             settings["repo_url"] = entry.get_text().strip()
             self.set_settings(settings)
-            self._last_settings = self.plugin_base.get_settings().copy()
+            self._last_settings = {**self.plugin_base.get_settings(), **self.get_settings()}
             self.fetch_and_display_pull_request_count()
             self._repo_url_change_timeout_id = None
             return False  # Only run once
@@ -140,7 +140,10 @@ class PullRequestsActions(ActionBase):
         return "", ""
 
     def on_tick(self):
-        current_settings = self.plugin_base.get_settings().copy()
+        current_settings = {
+            **self.plugin_base.get_settings(),
+            **self.get_settings(),
+        }
         if current_settings != self._last_settings:
             self._last_settings = current_settings
             self.fetch_and_display_pull_request_count()
