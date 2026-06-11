@@ -188,7 +188,7 @@ class PullRequestsActions(ActionBase):
             }
 
             try:
-                response = requests.get(url, headers=headers, timeout=10)
+                response = requests.get(url, headers=headers, params={"per_page": 100}, timeout=10)
                 status = response.status_code
 
                 if status == 200:
