@@ -476,12 +476,16 @@ class ContributionsActions(ActionCore):
             cache_dir = os.path.join(plugin_path, "contributions_cache")
             os.makedirs(cache_dir, exist_ok=True)
 
-            # Clean up orphaned .tmp files and stale images from old usernames
+            # Clean up orphaned .tmp files (only if older than 60s to avoid deleting in-flight writes)
+            # and stale images from old usernames
+            import time
+            now = time.time()
             for fname in os.listdir(cache_dir):
                 fpath = os.path.join(cache_dir, fname)
                 if fname.endswith(".tmp"):
                     try:
-                        os.remove(fpath)
+                        if now - os.path.getmtime(fpath) > 60:
+                            os.remove(fpath)
                     except Exception:
                         pass
                 elif fname.endswith(".png"):
