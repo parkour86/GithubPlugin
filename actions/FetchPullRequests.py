@@ -260,10 +260,6 @@ class PullRequestsActions(ActionBase):
                     states.extend(conclusions)
                     if in_progress:
                         states.append("in_progress")
-
-                    # Break out of the loop if any failure is found
-                    if "failure" in conclusions:
-                        break
                 else:
                     log.warning(f"Failed to fetch check-runs for SHA {sha}: {response.status_code}")
             except Exception as e:
