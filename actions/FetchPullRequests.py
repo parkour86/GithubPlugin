@@ -211,8 +211,8 @@ class PullRequestsActions(ActionBase):
             }
 
             try:
-                # First 25 most recently updated PRs — used for CI status checks
-                first_response = requests.get(url, headers=headers, params={"per_page": 25, "state": "open"}, timeout=10)
+                # Fetch first page at 100 for efficient pagination; CI checks limited to first 25 SHAs
+                first_response = requests.get(url, headers=headers, params={"per_page": 100, "state": "open"}, timeout=10)
                 status = first_response.status_code
 
                 if status == 200:
@@ -249,7 +249,7 @@ class PullRequestsActions(ActionBase):
                     if pr_count > 0:
                         shas = [
                             pr["head"]["sha"]
-                            for pr in first_page
+                            for pr in first_page[:25]
                             if isinstance(pr.get("head"), dict) and "sha" in pr["head"]
                         ]
                         self.fetch_and_set_commit_status_icons(owner, repo, shas, github_token, pr_count)
@@ -326,6 +326,9 @@ class PullRequestsActions(ActionBase):
         self.set_media(media_path=icon_path, size=0.9)
         self.set_center_label(
             f"{pr_count}", color=count_color, outline_width=3, font_size=32, font_family="cantarell"
+        )
+        self.set_bottom_label(
+            "PRs", color=[255, 255, 255], outline_width=2, font_size=15, font_family="cantarell"
         )
 
     # Legacy way of checking
