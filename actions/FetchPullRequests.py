@@ -75,13 +75,15 @@ class PullRequestsActions(ActionBase):
         repo_entry.connect("notify::text", self.on_repo_url_changed)
 
         # ComboRow for refresh rate
-        refresh_options = ["0", "10", "30", "60"]
+        refresh_options = ["0 (disabled)", "30 minutes", "60 minutes", "2 hours", "8 hours"]
+        valid_options = set(refresh_options)
+        default_rate = refresh_rate if refresh_rate in valid_options else "0 (disabled)"
         refresh_rate_row = ComboRow(
             action_core=self,
             var_name="refresh_rate",
-            default_value=str(refresh_rate),
+            default_value=default_rate,
             items=refresh_options,
-            title="Refresh Rate (minutes)",
+            title="Refresh Rate",
             on_change=self.on_refresh_rate_changed,
             auto_add=False
         )
@@ -371,16 +373,18 @@ class PullRequestsActions(ActionBase):
                 pass
             self._refresh_timer_id = None
 
-        # Get refresh_rate from settings
+        # Get refresh_rate from settings and convert label to minutes
         settings = self.get_settings()
-        refresh_rate = settings.get("refresh_rate", "60")
-        try:
-            refresh_rate = int(refresh_rate)
-        except Exception:
-            refresh_rate = 60
+        rate_label = settings.get("refresh_rate", "0 (disabled)")
+        rate_map = {
+            "30 minutes": 30,
+            "60 minutes": 60,
+            "2 hours": 120,
+            "8 hours": 480,
+        }
+        refresh_rate = rate_map.get(rate_label, 0)
 
-        # Don't start if refresh_rate is 0 or less
-        if not isinstance(refresh_rate, int) or refresh_rate <= 0:
+        if refresh_rate <= 0:
             return
 
         def _timer_callback():
