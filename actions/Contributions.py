@@ -431,7 +431,7 @@ class ContributionsActions(ActionCore):
         os.makedirs(cache_dir, exist_ok=True)
         img_path = os.path.join(cache_dir, f"contributions_img_{github_user}_{quarter_idx + 1}.png")
         tmp_path = img_path + ".tmp"
-        img.save(tmp_path)
+        img.save(tmp_path, format="PNG")
         os.replace(tmp_path, img_path)
         return img_path
 
