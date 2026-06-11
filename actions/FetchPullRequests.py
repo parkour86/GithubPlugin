@@ -1,39 +1,42 @@
 # Import StreamController modules
 from src.backend.PluginManager.ActionBase import ActionBase
-from src.backend.PluginManager.PluginBase import PluginBase
-from src.backend.PluginManager.ActionHolder import ActionHolder
+from src.backend.PluginManager.PluginBase import PluginBase  # noqa: F401
+from src.backend.PluginManager.ActionHolder import ActionHolder  # noqa: F401
 
 # Import python modules
 import os
+import threading
 from loguru import logger as log
 import requests
 
-# Import gtk modules - used for the config rows (optional, for future UI)
-import gi
+# gi.require_version must be called before any gi.repository imports
+import gi  # noqa: E402
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw
+from gi.repository import Adw  # noqa: E402
+from GtkHelper.GenerativeUI.ComboRow import ComboRow  # noqa: E402
 
-# Import ComboRow for dropdowns
-from GtkHelper.GenerativeUI.ComboRow import ComboRow
 
 class PullRequestsActions(ActionBase):
     """
     Example Action for PluginTemplate: PullRequests
     This action can be extended to fetch and display pull requests from a repository.
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._refresh_timer_id = None  # For periodic refresh
+        self._refresh_timer_id = None
         self._token_change_timeout_id = None
         self._repo_url_change_timeout_id = None
         self._last_settings = None
+        self._fetch_lock = threading.Lock()
 
     def on_ready(self) -> None:
         settings = self.get_settings()
         github_token = self.plugin_base.get_settings().get("github_token", "")
         repo_url = settings.get("repo_url", "")
-        if github_token and repo_url and repo_url.startswith("https://github.com/"):
+        owner, repo = self.parse_owner_repo(repo_url)
+        if github_token and owner and repo:
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
             self.fetch_and_display_pull_request_count()
         else:
@@ -41,6 +44,7 @@ class PullRequestsActions(ActionBase):
             self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "info.png"), size=0.9)
             self.set_top_label("\nConfigure\nGithub\nPlugin", color=[255, 100, 100], outline_width=1, font_size=17)
 
+        self._last_settings = {**self.plugin_base.get_settings(), **self.get_settings()}
         self.start_refresh_timer()
 
     def on_key_down(self) -> None:
@@ -53,11 +57,6 @@ class PullRequestsActions(ActionBase):
             webbrowser.open(url)
         else:
             log.warning("PullRequests: Cannot open PRs page, owner or repo missing.")
-
-    def on_key_up(self) -> None:
-
-        log.info("PullRequests: Key up event triggered")
-        # Placeholder for logic to clear or update UI
 
     def get_config_rows(self):
         settings = self.get_settings()
@@ -104,6 +103,7 @@ class PullRequestsActions(ActionBase):
             plugin_settings = self.plugin_base.get_settings()
             plugin_settings["github_token"] = entry.get_text().strip()
             self.plugin_base.set_settings(plugin_settings)
+            self._last_settings = {**plugin_settings, **self.get_settings()}
             self.fetch_and_display_pull_request_count()
             self._token_change_timeout_id = None
             return False  # Only run once
@@ -125,6 +125,7 @@ class PullRequestsActions(ActionBase):
             settings = self.get_settings()
             settings["repo_url"] = entry.get_text().strip()
             self.set_settings(settings)
+            self._last_settings = {**self.plugin_base.get_settings(), **self.get_settings()}
             self.fetch_and_display_pull_request_count()
             self._repo_url_change_timeout_id = None
             return False  # Only run once
@@ -141,7 +142,10 @@ class PullRequestsActions(ActionBase):
         return "", ""
 
     def on_tick(self):
-        current_settings = self.plugin_base.get_settings().copy()
+        current_settings = {
+            **self.plugin_base.get_settings(),
+            **self.get_settings(),
+        }
         if current_settings != self._last_settings:
             self._last_settings = current_settings
             self.fetch_and_display_pull_request_count()
@@ -166,7 +170,18 @@ class PullRequestsActions(ActionBase):
             self.set_background_color(color=[255, 255, 255, 255], update=True)
 
     def fetch_and_display_pull_request_count(self):
-        # Common red label parameters
+        t = threading.Thread(target=self._fetch_worker, daemon=True)
+        t.start()
+
+    def _fetch_worker(self):
+        if not self._fetch_lock.acquire(blocking=False):
+            return
+        try:
+            self._do_fetch_and_display()
+        finally:
+            self._fetch_lock.release()
+
+    def _do_fetch_and_display(self):
         red = [255, 100, 100]
         kwargs = {"color": red, "outline_width": 1, "font_size": 17, "font_family": "cantarell"}
         default_media = os.path.join(self.plugin_base.PATH, "assets", "info.png")
@@ -176,69 +191,65 @@ class PullRequestsActions(ActionBase):
             settings = self.get_settings()
             repo_url = settings.get("repo_url", "")
             owner, repo = self.parse_owner_repo(repo_url)
-            log.info(f"[DEBUG] Fetching pull requests for {owner}/{repo}")
+            log.info(f"Fetching pull requests for {owner}/{repo} (token: {github_token[:13]}...)")
 
             if not owner or not repo or not github_token:
                 self.clear_labels("error")
-                self.set_background_color(color=[255, 255, 255, 255], update=True)
                 self.set_top_label("\nConfigure\nGithub\nPlugin", **kwargs)
                 self.set_media(media_path=default_media, size=0.9)
-                #self.set_bottom_label("Missing Info", color=[255, 100, 100], outline_width=1, font_family="cantarell")
                 return
 
             url = f"https://api.github.com/repos/{owner}/{repo}/pulls"
             headers = {
                 "Authorization": f"token {github_token}",
-                "Accept": "application/vnd.github.v3+json"
+                "Accept": "application/vnd.github+json"
             }
 
             try:
-                response = requests.get(url, headers=headers, timeout=10)
+                response = requests.get(url, headers=headers, params={"per_page": 100}, timeout=10)
                 status = response.status_code
 
                 if status == 200:
                     pulls = response.json()
                     pr_count = len(pulls)
                     self.clear_labels("success")
-                    self.set_center_label("PRs", color=[100, 255, 100], outline_width=2, font_size=20, font_family="cantarell")
-                    self.set_bottom_label(f"{pr_count}", color=[100, 255, 100], outline_width=4, font_size=20, font_family="cantarell")
-                    # Set default gray Github icon
+                    self.set_center_label(
+                        "PRs", color=[100, 255, 100], outline_width=2, font_size=20, font_family="cantarell"
+                    )
+                    self.set_bottom_label(
+                        f"{pr_count}", color=[100, 255, 100], outline_width=4, font_size=20, font_family="cantarell"
+                    )
                     self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "#595959.png"), size=0.9)
-                    # Extract SHAs and check commit statuses only if there are PRs
                     if pr_count > 0:
-                        shas = [pr["head"]["sha"] for pr in pulls if "head" in pr and "sha" in pr["head"]]
-                        self.fetch_and_set_commit_status_icons(owner, repo, shas)
+                        shas = [
+                            pr["head"]["sha"]
+                            for pr in pulls
+                            if isinstance(pr.get("head"), dict) and "sha" in pr["head"]
+                        ]
+                        self.fetch_and_set_commit_status_icons(owner, repo, shas, github_token)
                 else:
                     self.clear_labels("error")
-
                     if status == 404:
                         self.set_top_label("\nInvalid\nRepo URL", **kwargs)
-
                     elif status == 401:
                         self.set_top_label("\nInvalid\nToken", **kwargs)
-
                     else:
                         self.set_top_label("\nConfigure\nGithub\nPlugin", **kwargs)
-
                     self.set_media(media_path=default_media, size=0.9)
-                    self.set_background_color(color=[255, 255, 255, 255], update=True)
 
             except Exception:
                 self.clear_labels("error")
                 self.set_top_label("\nRequest\nFailed", **kwargs)
                 self.set_media(media_path=default_media, size=0.9)
-                self.set_background_color(color=[255, 255, 255, 255], update=True)
         except Exception:
             self.clear_labels("error")
             self.set_top_label("\nInternal\nError", **kwargs)
             self.set_media(media_path=default_media, size=0.9)
-            self.set_background_color(color=[255, 255, 255, 255], update=True)
 
-    def fetch_and_set_commit_status_icons(self, owner, repo, shas):
-        import requests
+    def fetch_and_set_commit_status_icons(self, owner, repo, shas, github_token):
         headers = {
-            "Authorization": f"token {self.plugin_base.get_settings().get('github_token', '')}",
-            "Accept": "application/vnd.github.v3+json"
+            "Authorization": f"token {github_token}",
+            "Accept": "application/vnd.github+json"
         }
 
         states = []
@@ -249,26 +260,32 @@ class PullRequestsActions(ActionBase):
                 response = requests.get(url, headers=headers, timeout=10)
                 if response.status_code == 200:
                     data = response.json()
-                    conclusions = [run.get("conclusion") for run in data.get("check_runs", []) if run.get("status") == "completed"]
+                    conclusions = [
+                        run.get("conclusion")
+                        for run in data.get("check_runs", [])
+                        if run.get("status") == "completed" and run.get("conclusion")
+                    ]
+                    in_progress = any(
+                        run.get("status") in ("in_progress", "queued")
+                        for run in data.get("check_runs", [])
+                    )
 
                     log.info(f"SHA: {sha}, Check run conclusions: {conclusions}")
 
-                    # Add all conclusions from this SHA
+                    # Add all conclusions and a sentinel for in-progress runs
                     states.extend(conclusions)
-
-                    # Break out of the loop if any failure is found
-                    if "failure" in conclusions:
-                        break
+                    if in_progress:
+                        states.append("in_progress")
                 else:
                     log.warning(f"Failed to fetch check-runs for SHA {sha}: {response.status_code}")
             except Exception as e:
                 log.error(f"Exception while fetching check-runs for {sha}: {e}")
                 continue
 
-        # Decide icon color based on priority: failure > cancelled > pending > success
+        # Decide icon color based on priority: failure > cancelled/in-progress > success
         if "failure" in states:
             icon_color = "#A00000"  # red
-        elif "cancelled" in states or "timed_out" in states:
+        elif "cancelled" in states or "in_progress" in states:
             icon_color = "#B7B700"  # yellow
         elif "success" in states:
             icon_color = "#236B23"  # green
@@ -278,7 +295,6 @@ class PullRequestsActions(ActionBase):
         icon_path = os.path.join(self.plugin_base.PATH, "assets", f"{icon_color}.png")
         self.set_media(media_path=icon_path, size=0.9)
 
-
     # Legacy way of checking
     # def fetch_and_set_commit_status_icons(self, owner, repo, shas):
     #     import requests
@@ -287,7 +303,7 @@ class PullRequestsActions(ActionBase):
     #         url = f"https://api.github.com/repos/{owner}/{repo}/commits/{sha}/status"
     #         headers = {
     #             "Authorization": f"token {self.get_settings().get('github_token', '')}",
-    #             "Accept": "application/vnd.github.v3+json"
+    #             "Accept": "application/vnd.github+json"
     #         }
     #         try:
     #             response = requests.get(url, headers=headers, timeout=10)
@@ -351,7 +367,12 @@ class PullRequestsActions(ActionBase):
     def __del__(self):
         try:
             from gi.repository import GLib
-            if self._refresh_timer_id is not None:
-                GLib.source_remove(self._refresh_timer_id)
+            for timer_id in (
+                self._refresh_timer_id,
+                self._token_change_timeout_id,
+                self._repo_url_change_timeout_id,
+            ):
+                if timer_id is not None:
+                    GLib.idle_add(GLib.source_remove, timer_id)
         except Exception:
             pass
