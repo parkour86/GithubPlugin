@@ -249,11 +249,17 @@ class PullRequestsActions(ActionBase):
                         for run in data.get("check_runs", [])
                         if run.get("status") == "completed" and run.get("conclusion")
                     ]
+                    in_progress = any(
+                        run.get("status") in ("in_progress", "queued")
+                        for run in data.get("check_runs", [])
+                    )
 
                     log.info(f"SHA: {sha}, Check run conclusions: {conclusions}")
 
-                    # Add all conclusions from this SHA
+                    # Add all conclusions and a sentinel for in-progress runs
                     states.extend(conclusions)
+                    if in_progress:
+                        states.append("in_progress")
 
                     # Break out of the loop if any failure is found
                     if "failure" in conclusions:
@@ -264,10 +270,10 @@ class PullRequestsActions(ActionBase):
                 log.error(f"Exception while fetching check-runs for {sha}: {e}")
                 continue
 
-        # Decide icon color based on priority: failure > cancelled > pending > success
+        # Decide icon color based on priority: failure > cancelled/in-progress > success
         if "failure" in states:
             icon_color = "#A00000"  # red
-        elif "cancelled" in states or "timed_out" in states:
+        elif "cancelled" in states or "in_progress" in states:
             icon_color = "#B7B700"  # yellow
         elif "success" in states:
             icon_color = "#236B23"  # green
