@@ -425,7 +425,7 @@ class ContributionsActions(ActionCore):
                 draw.rectangle(box, fill=color)
                 draw.rectangle(box, outline="#777777", width=1)
 
-        img_path = os.path.join(plugin_path, f"contributions_img_{github_user}_{quarter_idx+1}.png")
+        img_path = os.path.join(plugin_path, f"contributions_img_{github_user}_{quarter_idx + 1}.png")
         img.save(img_path)
         return img_path
 
